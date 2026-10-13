@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Academia Semente: Formação em Inglês em Angola. Cursos presenciais, online e domiciliares. Metodologia exclusiva para angolanos.">
+  <meta name="keywords" content="inglês Angola, academia semente, aprender inglês, cursos de inglês Luanda, Kilamba">
+  <title>Academia Semente | Inglês para a vida real</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
+</head>
+<body>
+  <!-- ========== ANNOUNCEMENT BAR ========== -->
+  <div class="announce-bar" id="announceBar">
+    <a href="#cursos" class="announce-link">
+      <span data-i18n="announce">Inscrições abertas</span> · <span class="announce-accent" data-i18n="announceAccent">Teste de nível gratuito</span>
+    </a>
+  </div>
+
+  <!-- ========== HEADER ========== -->
+  <header class="site-header" id="siteHeader">
+    <div class="header-inner">
+      <!-- Mobile hamburger -->
+      <button class="hamburger" id="hamburger" aria-label="Menu" aria-expanded="false">
+        <span class="ham-line"></span>
+        <span class="ham-line"></span>
+        <span class="ham-line"></span>
+      </button>
+
+      <!-- Brand (centered) -->
+      <a href="#inicio" class="brand">
+        <span class="brand-name">ACADEMIA SEMENTE</span>
+        <span class="brand-tagline" data-i18n="tagline">Cultivando conhecimento</span>
+      </a>
+
+      <!-- Right actions: cart + language -->
+      <div class="header-actions">
+        <button class="cart-btn" id="cartBtn" aria-label="Carrinho">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M6 6h15l-1.5 9h-12z"/>
+            <circle cx="9" cy="20" r="1"/>
+            <circle cx="18" cy="20" r="1"/>
+            <path d="M6 6L5 3H2"/>
+          </svg>
+          <span class="cart-count" id="cartCount">0</span>
+        </button>
+        <div class="lang-toggle">
+          <button class="lang-btn active" data-lang="pt" aria-label="Português">PT</button>
+          <span class="lang-divider">|</span>
+          <button class="lang-btn" data-lang="en" aria-label="English">EN</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop Navigation (below brand) -->
+    <nav class="desktop-nav" id="desktopNav">
+      <a href="#inicio" data-i18n="navHome">Início</a>
+      <a href="#sobre" data-i18n="navAbout">Sobre</a>
+      <a href="#cursos" data-i18n="navCourses">Cursos</a>
+      <a href="#produtos" data-i18n="navProducts">Produtos</a>
+      <a href="#contacto" data-i18n="navContact">Contacto</a>
+      <a href="inscricao.html" data-i18n="navEnroll">Inscrição</a>
+    </nav>
+  </header>
+
+  <!-- ========== MOBILE DRAWER ========== -->
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="mobile-drawer" id="mobileDrawer" aria-hidden="true">
+    <div class="drawer-header">
+      <span class="drawer-brand">ACADEMIA SEMENTE</span>
+      <button class="drawer-close" id="drawerClose" aria-label="Fechar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <nav class="drawer-nav">
+      <a href="#inicio" data-i18n="navHome">Início</a>
+      <a href="#sobre" data-i18n="navAbout">Sobre</a>
+      <a href="#cursos" data-i18n="navCourses">Cursos</a>
+      <a href="#produtos" data-i18n="navProducts">Produtos</a>
+      <a href="#contacto" data-i18n="navContact">Contacto</a>
+      <a href="inscricao.html" data-i18n="navEnroll">Inscrição</a>
+    </nav>
+    <div class="drawer-footer">
+      <a href="https://wa.me/244945574700" target="_blank" rel="noopener" class="drawer-whatsapp">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.512a.5.5 0 00.605.654l4.69-1.494A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.39 0-4.605-.75-6.44-2.03l-.46-.3-3.04.97.96-3.15-.32-.48A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+        WhatsApp
+      </a>
+    </div>
+  </aside>
+
+  <main>
+    <!-- ========== HERO ========== -->
+    <section class="hero" id="inicio">
+      <div class="hero-bg"></div>
+      <div class="hero-overlay"></div>
+      <div class="hero-inner">
+        <div class="hero-content">
+          <p class="hero-eyebrow" data-i18n="heroEyebrow">Formação em Inglês · Angola</p>
+          <h1 class="hero-title" data-i18n="heroTitle">Aprenda inglês<br>para a vida real</h1>
+          <p class="hero-subtitle" data-i18n="heroSubtitle">Metodologia exclusiva que transforma o português que você já fala em inglês fluente, em até 12 meses.</p>
+          <div class="hero-cta">
+            <a href="#cursos" class="btn btn-primary" data-i18n="heroCta">Ver cursos</a>
+            <a href="https://wa.me/244945574700?text=Olá! Gostaria de saber mais sobre os cursos da Academia Semente." target="_blank" rel="noopener" class="btn btn-ghost" data-i18n="heroCta2">Falar no WhatsApp</a>
+          </div>
+        </div>
+      </div>
+      <div class="hero-scroll">
+        <span data-i18n="scroll">Scroll</span>
+        <div class="scroll-line"></div>
+      </div>
+    </section>
+
+    <!-- ========== SOBRE ========== -->
+    <section class="section sobre" id="sobre">
+      <div class="sobre-bg" aria-hidden="true"></div>
+      <div class="container">
+        <div class="section-header">
+          <p class="section-eyebrow" data-i18n="aboutEyebrow">A Academia</p>
+          <h2 class="section-title" data-i18n="aboutTitle">Toda grande conquista<br>começa por uma semente</h2>
+        </div>
+
+        <div class="sobre-grid">
+          <div class="sobre-text">
+            <p data-i18n="aboutP1">A Academia Semente nasceu da necessidade de preencher as lacunas no ensino de inglês em Angola e das dificuldades que falantes de português enfrentam ao aprender esta língua.</p>
+            <p data-i18n="aboutP2">Utilizamos uma metodologia exclusiva, uma reformulação ideológica que funciona como ponte mental, para que o aluno consiga reproduzir tudo o que fala em português para inglês por meio de padrões e passe a pensar apenas em inglês.</p>
+            <p data-i18n="aboutP3">Foco em empregabilidade e vida real: o mercado não quer aluno que tira 20 na prova e trava na entrevista.</p>
+          </div>
+          <div class="sobre-stats">
+            <div class="stat-card">
+              <span class="stat-number">+100</span>
+              <span class="stat-label" data-i18n="statStudents">Alunos formados</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">2</span>
+              <span class="stat-label" data-i18n="statCenters">Centros em Angola</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">12</span>
+              <span class="stat-label" data-i18n="statMonths">Meses para fluência</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-number">24h</span>
+              <span class="stat-label" data-i18n="statAI">IA de apoio</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mission-vision">
+          <div class="mv-card">
+            <div class="mv-icon">
+              <img src="assets/icons/missao.jpg" alt="" width="64" height="64" loading="lazy">
+            </div>
+            <h3 data-i18n="missionTitle">Missão</h3>
+            <p data-i18n="missionText">Formar angolanos comunicativos, empregáveis e confiantes em inglês, em até 12 meses, usando tecnologia e prática real.</p>
+          </div>
+          <div class="mv-card">
+            <div class="mv-icon">
+              <img src="assets/icons/visao.jpg" alt="" width="64" height="64" loading="lazy">
+            </div>
+            <h3 data-i18n="visionTitle">Visão</h3>
+            <p data-i18n="visionText">Ser o centro de inglês de referência em Angola que forma líderes bilingues, conectando angolanos a oportunidades globais.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== CURSOS / PREÇOS ========== -->
+    <section class="section cursos" id="cursos">
+      <div class="container">
+        <div class="section-header">
+          <p class="section-eyebrow" data-i18n="coursesEyebrow">Modalidades</p>
+          <h2 class="section-title" data-i18n="coursesTitle">Escolha o formato<br>que se adapta a si</h2>
+          <p class="section-desc" data-i18n="coursesDesc">Aulas presenciais, online ou ao domicílio. Todas com a mesma metodologia exclusiva e acompanhamento individual.</p>
+        </div>
+
+        <div class="pricing-grid">
+          <!-- Online -->
+          <article class="price-card">
+            <div class="price-icon">
+              <img src="assets/icons/online.jpg" alt="" width="72" height="72" loading="lazy">
+            </div>
+            <div class="price-header">
+              <h3 data-i18n="onlineTitle">Online</h3>
+              <p class="price-tag" data-i18n="onlineTag">Flexível</p>
+            </div>
+            <div class="price-amount">
+              <span class="currency">Kz</span>
+              <span class="value">10.525</span>
+              <span class="period" data-i18n="perMonth">/mês</span>
+            </div>
+            <ul class="price-features">
+              <li data-i18n="onlineF1">Aulas individualizadas</li>
+              <li data-i18n="onlineF2">Estude a qualquer hora e em qualquer lugar</li>
+              <li data-i18n="onlineF3">Método por etapas para evolução garantida</li>
+              <li data-i18n="onlineF4">IA de apoio 24 horas</li>
+              <li data-i18n="onlineF5">Feedback mensal em vídeo</li>
+            </ul>
+            <a href="inscricao.html?course=Online" class="btn btn-outline enroll-btn" data-course="Online" data-i18n="enrollBtn">Inscrever-me</a>
+          </article>
+
+          <!-- Presencial (featured) -->
+          <article class="price-card featured">
+            <div class="price-badge" data-i18n="popular">Mais escolhido</div>
+            <div class="price-icon">
+              <img src="assets/icons/presencial.jpg" alt="" width="72" height="72" loading="lazy">
+            </div>
+            <div class="price-header">
+              <h3 data-i18n="presencialTitle">Presencial</h3>
+              <p class="price-tag" data-i18n="presencialTag">Híbrido</p>
+            </div>
+            <div class="price-amount">
+              <span class="currency">Kz</span>
+              <span class="value">15.225</span>
+              <span class="period" data-i18n="perMonth">/mês</span>
+            </div>
+            <ul class="price-features">
+              <li data-i18n="presencialF1">Aulas diretas e interativas</li>
+              <li data-i18n="presencialF2">Ambiente de aprendizagem focado</li>
+              <li data-i18n="presencialF3">3 dias presenciais + 2 online</li>
+              <li data-i18n="presencialF4">Eventos reais (English Day, debates)</li>
+              <li data-i18n="presencialF5">Comunidade WhatsApp só em inglês</li>
+            </ul>
+            <a href="inscricao.html?course=Presencial" class="btn btn-primary enroll-btn" data-course="Presencial" data-i18n="enrollBtn">Inscrever-me</a>
+          </article>
+
+          <!-- Domiciliar -->
+          <article class="price-card">
+            <div class="price-icon">
+              <img src="assets/icons/domiciliar.jpg" alt="" width="72" height="72" loading="lazy">
+            </div>
+            <div class="price-header">
+              <h3 data-i18n="domiciliarTitle">Domiciliar</h3>
+              <p class="price-tag" data-i18n="domiciliarTag">Premium</p>
+            </div>
+            <div class="price-amount">
+              <span class="currency">Kz</span>
+              <span class="value">100.000</span>
+              <span class="period" data-i18n="perMonth">/mês</span>
+            </div>
+            <ul class="price-features">
+              <li data-i18n="domiciliarF1">Atenção 100% focada no aluno</li>
+              <li data-i18n="domiciliarF2">Professor desloca-se até si</li>
+              <li data-i18n="domiciliarF3">Horário completamente flexível</li>
+              <li data-i18n="domiciliarF4">Plano de estudos personalizado</li>
+              <li data-i18n="domiciliarF5">Acompanhamento intensivo</li>
+            </ul>
+            <a href="inscricao.html?course=Domiciliar" class="btn btn-outline enroll-btn" data-course="Domiciliar" data-i18n="enrollBtn">Inscrever-me</a>
+          </article>
+        </div>
+
+        <div class="horarios">
+          <div class="horarios-header">
+            <div class="horarios-icon">
+              <img src="assets/icons/horarios.jpg" alt="" width="56" height="56" loading="lazy">
+            </div>
+            <h3 data-i18n="schedulesTitle">Horários disponíveis</h3>
+          </div>
+          <div class="horarios-list">
+            <div class="horario-item">
+              <span class="horario-time">08h - 10h</span>
+              <span class="horario-label" data-i18n="morning">Manhã</span>
+            </div>
+            <div class="horario-item">
+              <span class="horario-time">14h - 16h</span>
+              <span class="horario-label" data-i18n="afternoon">Tarde</span>
+            </div>
+          </div>
+          <p class="teste-gratis" data-i18n="freeTest">Teste de nível gratuito · Sem compromisso</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== PRODUTOS FÍSICOS ========== -->
+    <section class="section produtos" id="produtos">
+      <div class="container">
+        <div class="section-header">
+          <p class="section-eyebrow" data-i18n="productsEyebrow">Loja</p>
+          <h2 class="section-title" data-i18n="productsTitle">Materiais e produtos<br>oficiais</h2>
+          <p class="section-desc" data-i18n="productsDesc">Leve a Academia Semente consigo. Materiais pensados para acelerar a sua evolução.</p>
+        </div>
+
+        <div class="products-grid">
+          <article class="product-card" data-id="caderno" data-name="Caderno de Padrões" data-price="8500" data-name-en="Patterns Notebook">
+            <div class="product-image">
+              <img src="assets/products/caderno.jpg" alt="Caderno de Padrões Academia Semente" loading="lazy">
+            </div>
+            <div class="product-info">
+              <h3 data-i18n="prod1Title">Caderno de Padrões</h3>
+              <p data-i18n="prod1Desc">Caderno exclusivo com os padrões da metodologia Semente para prática diária.</p>
+              <div class="product-price">
+                <span class="price">8.500 Kz</span>
+                <button type="button" class="btn btn-sm add-to-cart" data-i18n="buyBtn">Adicionar</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="product-card" data-id="polo" data-name="Polo Oficial" data-price="12000" data-name-en="Official Polo">
+            <div class="product-image product-slider" data-slider>
+              <div class="slider-track">
+                <img src="assets/products/polo-front.jpg" alt="Polo Oficial - frente" loading="lazy" draggable="false">
+                <img src="assets/products/polo-back.jpg" alt="Polo Oficial - costas" loading="lazy" draggable="false">
+              </div>
+              <button type="button" class="slider-dot active" data-slide="0" aria-label="Frente"></button>
+              <button type="button" class="slider-dot" data-slide="1" aria-label="Costas"></button>
+              <button type="button" class="slider-nav slider-prev" aria-label="Anterior">‹</button>
+              <button type="button" class="slider-nav slider-next" aria-label="Seguinte">›</button>
+            </div>
+            <div class="product-info">
+              <h3 data-i18n="prod2Title">Polo Oficial</h3>
+              <p data-i18n="prod2Desc">Polo premium de manga comprida com o logotipo Academia Semente. Acabamento profissional.</p>
+              <div class="product-price">
+                <span class="price">12.000 Kz</span>
+                <button type="button" class="btn btn-sm add-to-cart" data-i18n="buyBtn">Adicionar</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="product-card" data-id="canetas" data-name="Kit Canetas Semente" data-price="3500" data-name-en="Semente Pen Kit">
+            <div class="product-image">
+              <img src="assets/products/canetas.jpg" alt="Kit Canetas Academia Semente" loading="lazy">
+            </div>
+            <div class="product-info">
+              <h3 data-i18n="prod3Title">Kit Canetas Semente</h3>
+              <p data-i18n="prod3Desc">Conjunto de 3 canetas premium com a marca Academia Semente.</p>
+              <div class="product-price">
+                <span class="price">3.500 Kz</span>
+                <button type="button" class="btn btn-sm add-to-cart" data-i18n="buyBtn">Adicionar</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="product-card" data-id="manual" data-name="Manual do Aluno" data-price="15000" data-name-en="Student Manual">
+            <div class="product-image">
+              <img src="assets/products/manual.jpg" alt="Manual do Aluno Academia Semente" loading="lazy">
+            </div>
+            <div class="product-info">
+              <h3 data-i18n="prod4Title">Manual do Aluno</h3>
+              <p data-i18n="prod4Desc">Guia completo da metodologia Semente com exercícios e padrões avançados.</p>
+              <div class="product-price">
+                <span class="price">15.000 Kz</span>
+                <button type="button" class="btn btn-sm add-to-cart" data-i18n="buyBtn">Adicionar</button>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== DIFERENCIAIS ========== -->
+    <section class="section diferenciais">
+      <div class="diferenciais-bg" aria-hidden="true"></div>
+      <div class="container">
+        <div class="section-header">
+          <p class="section-eyebrow" data-i18n="diffEyebrow">Porquê nós</p>
+          <h2 class="section-title" data-i18n="diffTitle">O que nos torna<br>diferentes</h2>
+        </div>
+
+        <div class="diff-grid">
+          <div class="diff-item">
+            <div class="diff-icon">
+              <img src="assets/icons/metodologia.jpg" alt="" loading="lazy" width="80" height="80">
+            </div>
+            <h3 data-i18n="diff1Title">Metodologia exclusiva</h3>
+            <p data-i18n="diff1Text">Ponte mental que permite pensar directamente em inglês a partir do português.</p>
+          </div>
+          <div class="diff-item">
+            <div class="diff-icon">
+              <img src="assets/icons/empregabilidade.jpg" alt="" loading="lazy" width="80" height="80">
+            </div>
+            <h3 data-i18n="diff2Title">Foco em empregabilidade</h3>
+            <p data-i18n="diff2Text">Entrevistas, e-mails corporativos e atendimento ao cliente, inglês para o mercado.</p>
+          </div>
+          <div class="diff-item">
+            <div class="diff-icon">
+              <img src="assets/icons/tecnologia.jpg" alt="" loading="lazy" width="80" height="80">
+            </div>
+            <h3 data-i18n="diff3Title">Tecnologia + humano</h3>
+            <p data-i18n="diff3Text">IA 24h para prática + professor como coach de comunicação.</p>
+          </div>
+          <div class="diff-item">
+            <div class="diff-icon">
+              <img src="assets/icons/ambiente.jpg" alt="" loading="lazy" width="80" height="80">
+            </div>
+            <h3 data-i18n="diff4Title">Ambiente sem julgamento</h3>
+            <p data-i18n="diff4Text">Sala onde errar é normal. Quebramos o medo de falar.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== CONTACTO ========== -->
+    <section class="section contacto" id="contacto">
+      <div class="contacto-bg" aria-hidden="true"></div>
+      <div class="container">
+        <div class="section-header">
+          <p class="section-eyebrow" data-i18n="contactEyebrow">Contacto</p>
+          <h2 class="section-title" data-i18n="contactTitle">Fale connosco</h2>
+          <p class="section-desc" data-i18n="contactDesc">Envie-nos uma mensagem. Respondemos rapidamente via WhatsApp. Para se inscrever num curso, use a página de inscrição.</p>
+        </div>
+
+        <div class="contact-grid">
+          <div class="contact-info">
+            <div class="info-item">
+              <span class="info-label" data-i18n="locationLabel">Localização</span>
+              <p>Kilamba, Ed R29, Andar 6, Ap 63<br>Luanda, Angola</p>
+            </div>
+            <div class="info-item">
+              <span class="info-label" data-i18n="phoneLabel">WhatsApp</span>
+              <p><a href="https://wa.me/244945574700">+244 945 574 700</a></p>
+            </div>
+            <div class="info-item">
+              <span class="info-label" data-i18n="emailLabel">Email</span>
+              <p><a href="mailto:academiasemente@gmail.com">academiasemente@gmail.com</a></p>
+            </div>
+            <div class="info-item">
+              <span class="info-label" data-i18n="socialLabel">Redes sociais</span>
+              <div class="social-links">
+                <a href="https://www.instagram.com/academiasemente" target="_blank" rel="noopener" aria-label="Instagram">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>
+                </a>
+                <a href="https://www.facebook.com/profile.php?id=61584786747541" target="_blank" rel="noopener" aria-label="Facebook">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+                </a>
+              </div>
+            </div>
+            <a href="inscricao.html" class="btn btn-primary" data-i18n="navEnroll">Inscrição</a>
+          </div>
+
+          <form class="contact-form" id="contactForm">
+            <div class="form-group">
+              <label for="c-name" data-i18n="formName">Nome completo</label>
+              <input type="text" id="c-name" name="name" required placeholder="O seu nome" data-i18n-placeholder="formNamePh" autocomplete="name">
+            </div>
+            <div class="form-group">
+              <label for="c-phone" data-i18n="formPhone">Telefone / WhatsApp</label>
+              <input type="tel" id="c-phone" name="phone" required placeholder="+244 ..." data-i18n-placeholder="formPhonePh" autocomplete="tel">
+            </div>
+            <div class="form-group">
+              <label for="c-interest" data-i18n="formInterest">Assunto</label>
+              <select id="c-interest" name="interest">
+                <option value="Informações gerais" data-i18n="optGeneral">Informações gerais</option>
+                <option value="Cursos" data-i18n="optCourses">Cursos</option>
+                <option value="Produtos" data-i18n="optProducts">Produtos / Materiais</option>
+                <option value="Parcerias" data-i18n="optPartner">Parcerias</option>
+                <option value="Outro" data-i18n="optOther">Outro</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="c-message" data-i18n="formMessage">Mensagem</label>
+              <textarea id="c-message" name="message" rows="4" required placeholder="Como podemos ajudar?" data-i18n-placeholder="formMessagePh"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full" data-i18n="formSubmit">Enviar via WhatsApp</button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <span class="footer-name">ACADEMIA SEMENTE</span>
+          <p data-i18n="footerTag">Cultivando conhecimento, formando futuros.</p>
+        </div>
+        <div class="footer-links">
+          <a href="#inicio" data-i18n="navHome">Início</a>
+          <a href="#sobre" data-i18n="navAbout">Sobre</a>
+          <a href="#cursos" data-i18n="navCourses">Cursos</a>
+          <a href="#produtos" data-i18n="navProducts">Produtos</a>
+          <a href="#contacto" data-i18n="navContact">Contacto</a>
+          <a href="inscricao.html" data-i18n="navEnroll">Inscrição</a>
+        </div>
+        <div class="footer-contact">
+          <div class="footer-contact-item">
+            <span class="footer-contact-label" data-i18n="locationLabel">Localização</span>
+            <p>Kilamba, Ed R29, Andar 6, Ap 63<br>Luanda, Angola</p>
+          </div>
+          <div class="footer-contact-item">
+            <span class="footer-contact-label" data-i18n="phoneLabel">WhatsApp</span>
+            <p><a href="https://wa.me/244945574700">+244 945 574 700</a></p>
+          </div>
+          <div class="footer-contact-item">
+            <span class="footer-contact-label" data-i18n="emailLabel">Email</span>
+            <p><a href="mailto:academiasemente@gmail.com">academiasemente@gmail.com</a></p>
+          </div>
+          <div class="footer-contact-item">
+            <span class="footer-contact-label" data-i18n="socialLabel">Redes sociais</span>
+            <div class="footer-social">
+              <a href="https://www.instagram.com/academiasemente" target="_blank" rel="noopener" aria-label="Instagram">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>
+              </a>
+              <a href="https://www.facebook.com/profile.php?id=61584786747541" target="_blank" rel="noopener" aria-label="Facebook">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© <span id="year"></span> Academia Semente. <span data-i18n="rights">Todos os direitos reservados.</span></p>
+        <p class="footer-motto">"Toda grande conquista começa por uma semente."</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========== CART DRAWER (right) ========== -->
+  <div class="cart-overlay" id="cartOverlay"></div>
+  <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+    <div class="cart-header">
+      <h3 data-i18n="cartTitle">Carrinho</h3>
+      <button class="cart-close" id="cartClose" aria-label="Fechar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="cart-body" id="cartBody">
+      <p class="cart-empty" data-i18n="cartEmpty">O seu carrinho está vazio.</p>
+    </div>
+    <div class="cart-footer" id="cartFooter" hidden>
+      <div class="cart-total-row">
+        <span data-i18n="cartTotal">Total</span>
+        <strong id="cartTotal">0 Kz</strong>
+      </div>
+      <button type="button" class="btn btn-outline btn-full cart-clear" id="cartClear" data-i18n="cartClear">Limpar tudo</button>
+      <button type="button" class="btn btn-primary btn-full" id="cartCheckout" data-i18n="cartCheckout">Finalizar compra</button>
+    </div>
+  </aside>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
