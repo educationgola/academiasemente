@@ -8,7 +8,7 @@ preview_urls = true
 [[d1_databases]]
 binding = "DB"
 database_name = "academiasemente-db"
-database_id = "0b19ecc8-cbcb-4993-bb90-3f76634e0cf3"   # run: npx wrangler d1 create academiasemente-db
+database_id = "f53f6896-c776-4c56-a5b8-dc44bfe23f12"
 
 # Optional: bind a KV if we need it later
 # [[kv_namespaces]]

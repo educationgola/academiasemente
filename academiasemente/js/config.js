@@ -3,8 +3,7 @@
  * Update WORKER_URL after deploying the Worker.
  */
 window.ACADEMIA_CONFIG = {
-  // After first deploy, replace with your real Worker URL, e.g.:
-  // https://academiasemente.educationgola.workers.dev
+  // Live Worker URL (after deploy)
   WORKER_URL: 'https://academiasemente.educationgola.workers.dev',
 
   // Cloudinary (public)
