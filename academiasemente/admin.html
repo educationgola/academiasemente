@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Admin | Academia Semente</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
+</head>
+<body>
+  <!-- LOGIN -->
+  <div id="loginView" class="login-view">
+    <form id="adminLoginForm" class="login-card">
+      <h1>Admin</h1>
+      <p>Academia Semente</p>
+      <label>
+        <span>Palavra-passe</span>
+        <input type="password" name="password" required autocomplete="current-password" autofocus>
+      </label>
+      <p class="error" id="loginError" hidden></p>
+      <button type="submit">Entrar</button>
+    </form>
+  </div>
+
+  <!-- APP -->
+  <div id="appView" class="app-view" hidden>
+    <header class="admin-header">
+      <strong>Admin · Academia Semente</strong>
+      <button type="button" id="adminLogout" class="btn-text">Sair</button>
+    </header>
+
+    <nav class="admin-nav">
+      <button type="button" class="nav-btn active" data-panel="students">Alunos</button>
+      <button type="button" class="nav-btn" data-panel="courses">Cursos & Vídeos</button>
+      <button type="button" class="nav-btn" data-panel="guide">Guia</button>
+    </nav>
+
+    <main class="admin-main">
+      <!-- Students -->
+      <section id="panel-students" class="panel">
+        <div class="panel-head">
+          <h2>Alunos</h2>
+          <button type="button" class="btn" id="refreshStudents">Actualizar</button>
+        </div>
+        <div id="studentsTable" class="table-wrap">
+          <p class="muted">A carregar…</p>
+        </div>
+      </section>
+
+      <!-- Courses -->
+      <section id="panel-courses" class="panel" hidden>
+        <div class="panel-head">
+          <h2>Cursos & Vídeos</h2>
+          <button type="button" class="btn" id="refreshCourses">Actualizar</button>
+        </div>
+        <div id="coursesAdmin" class="courses-admin">
+          <p class="muted">A carregar…</p>
+        </div>
+        <hr>
+        <h3>Novo curso</h3>
+        <form id="courseForm" class="form-grid">
+          <label>Título (PT) <input name="title_pt" required></label>
+          <label>Título (EN) <input name="title_en"></label>
+          <label>Descrição (PT) <textarea name="description_pt" rows="2"></textarea></label>
+          <label>Cover URL <input name="cover_url" placeholder="https://…"></label>
+          <button type="submit" class="btn">Guardar curso</button>
+        </form>
+        <hr>
+        <h3>Novo / editar vídeo</h3>
+        <form id="videoForm" class="form-grid">
+          <label>Course ID <input name="course_id" required placeholder="id do curso"></label>
+          <label>Título (PT) <input name="title_pt" required></label>
+          <label>Cloudinary public_id <input name="cloudinary_public_id" required placeholder="academiasemente/private/aula-01"></label>
+          <label>Duração (segundos) <input name="duration_seconds" type="number" inputmode="numeric"></label>
+          <button type="submit" class="btn">Guardar vídeo</button>
+        </form>
+        <p class="hint">Faça upload do vídeo no Cloudinary (tipo <strong>authenticated</strong> ou private) e cole o public_id aqui.</p>
+      </section>
+
+      <!-- Guide -->
+      <section id="panel-guide" class="panel" hidden>
+        <h2>Guia rápido</h2>
+        <ol class="guide-list">
+          <li><strong>Alunos</strong> — criam conta em /conta.html (Google ou email). Estado inicial: <em>pending</em>.</li>
+          <li>Crie um <strong>Curso</strong> e adicione <strong>Vídeos</strong> (public_id do Cloudinary).</li>
+          <li>Em Alunos, clique <strong>Atribuir curso</strong> e escolha o curso. O estado passa a <em>active</em>.</li>
+          <li>O aluno vê os vídeos no dashboard e o Worker gera links assinados temporários.</li>
+          <li>Publicar produtos/textos/imagens do site (loja) será adicionado na próxima iteração do painel (mesma lógica do blueprint).</li>
+        </ol>
+        <p class="hint">Se algo falhar → contacte o programador. Não partilhe a palavra-passe de admin.</p>
+      </section>
+    </main>
+  </div>
+
+  <!-- Grant modal -->
+  <div id="grantModal" class="modal" hidden>
+    <div class="modal-card">
+      <h3>Atribuir curso</h3>
+      <p id="grantStudentLabel"></p>
+      <label>Curso
+        <select id="grantCourseSelect"></select>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn-text" id="grantCancel">Cancelar</button>
+        <button type="button" class="btn" id="grantConfirm">Atribuir</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

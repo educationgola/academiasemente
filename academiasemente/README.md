@@ -353,3 +353,43 @@ The site hero keeps the original solid brand green; only the man is overlaid.
 - `css/styles.css` — `.product-slider` is `display: block` so track fills the card; only one side visible at a time
 - `README.md` — changelog
 
+
+---
+
+## Architecture (2026-10-15) — Student accounts + Admin + Private videos
+
+### New stack pieces
+- **Cloudflare Worker** (`worker/`) — auth API, admin, signed video URLs, catalog publish
+- **Cloudflare D1** — students, courses, videos, assignments
+- **Cloudinary** — public media + private/authenticated videos + `catalog.json`
+- **Google OAuth** + email/password for students
+- **Admin password** for staff
+
+### New pages
+| Page | Purpose |
+|------|---------|
+| `/conta.html` | Student login/signup (Google + email) + dashboard + private video player |
+| `/admin.html` | Staff panel: students, courses, videos, grant access |
+
+### Setup (free tier)
+See `worker/README.md` for full steps:
+1. `npx wrangler d1 create academiasemente-db` → put `database_id` in `wrangler.toml`
+2. `npx wrangler d1 execute academiasemente-db --remote --file=./schema.sql`
+3. Set secrets: `ADMIN_PASSWORD`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `GOOGLE_CLIENT_SECRET`, `JWT_SECRET`
+4. `npx wrangler deploy`
+5. Put Worker URL in `js/config.js` → `WORKER_URL`
+6. Google Console: add authorized JavaScript origins (Pages URL + workers.dev + later academiasemente.com)
+
+### Secrets policy
+**Never** commit API secrets or Google Client Secret. They live only as Worker secrets.
+
+### Student flow
+1. User creates account on `/conta.html` (Google or email/password) → status `pending`
+2. Staff logs into `/admin.html` → creates Course + Videos (Cloudinary public_id)
+3. Staff grants course to student → status becomes `active`
+4. Student sees courses/videos; Worker returns short-lived signed Cloudinary URL
+
+### Next iterations (planned)
+- Full admin media library + site image slots + publish catalog (blueprint style)
+- Link “Área do aluno” in public header/nav
+- Custom domain `academiasemente.com`

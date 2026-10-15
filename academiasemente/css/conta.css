@@ -1,0 +1,358 @@
+/* Academia Semente — Student area */
+
+.conta-page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: #faf9f7;
+  color: #1a1a1a;
+}
+
+.conta-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  background: #fff;
+}
+
+.conta-header .brand {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+}
+.conta-header .brand-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  font-size: 1rem;
+}
+.conta-header .brand-tagline {
+  font-size: 0.7rem;
+  opacity: 0.6;
+  letter-spacing: 0.04em;
+}
+
+.conta-main {
+  flex: 1;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+.conta-footer {
+  text-align: center;
+  padding: 1.25rem;
+  font-size: 0.85rem;
+  color: #666;
+  border-top: 1px solid rgba(0,0,0,0.06);
+}
+.conta-footer a {
+  color: inherit;
+  text-decoration: none;
+}
+.conta-footer a:hover { text-decoration: underline; }
+
+/* Auth card */
+.auth-section {
+  display: flex;
+  justify-content: center;
+  padding-top: 1rem;
+}
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+}
+.auth-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 500;
+  font-size: 1.75rem;
+  margin: 0 0 0.35rem;
+  text-align: center;
+}
+.auth-subtitle {
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0 0 1.5rem;
+}
+
+.google-btn-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+  min-height: 44px;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+  color: #999;
+  font-size: 0.8rem;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(0,0,0,0.1);
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+.auth-tab {
+  flex: 1;
+  padding: 0.6rem;
+  border: 1px solid rgba(0,0,0,0.12);
+  background: transparent;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.auth-tab.active {
+  background: #1a1a1a;
+  color: #fff;
+  border-color: #1a1a1a;
+}
+
+.auth-form .field {
+  display: block;
+  margin-bottom: 1rem;
+}
+.auth-form .field span {
+  display: block;
+  font-size: 0.8rem;
+  margin-bottom: 0.35rem;
+  color: #444;
+}
+.auth-form input {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid rgba(0,0,0,0.15);
+  border-radius: 8px;
+  font-size: 16px; /* prevent iOS zoom */
+  background: #fff;
+  box-sizing: border-box;
+}
+.auth-form input:focus {
+  outline: none;
+  border-color: #1a1a1a;
+}
+
+.auth-error {
+  color: #b33;
+  font-size: 0.85rem;
+  margin: 0 0 0.75rem;
+}
+
+.btn-primary {
+  background: #1a1a1a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.8rem 1.25rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.btn-primary:hover { opacity: 0.88; }
+.btn-block { width: 100%; }
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid rgba(0,0,0,0.2);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.btn-outline:hover { background: rgba(0,0,0,0.04); }
+
+.auth-note {
+  margin-top: 1.25rem;
+  font-size: 0.8rem;
+  color: #777;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* Dashboard */
+.dash-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.dash-user {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+.user-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.dash-greeting {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 500;
+  font-size: 1.5rem;
+  margin: 0 0 0.2rem;
+}
+.dash-status {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.pending-banner {
+  background: #fff8e6;
+  border: 1px solid #f0d78c;
+  border-radius: 10px;
+  padding: 1rem 1.15rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.section-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 500;
+  font-size: 1.35rem;
+  margin: 0 0 1rem;
+}
+
+.courses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.course-card {
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.course-cover {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  display: block;
+}
+.course-body {
+  padding: 1.15rem 1.25rem 1.25rem;
+}
+.course-body h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+.course-desc {
+  margin: 0 0 0.85rem;
+  font-size: 0.9rem;
+  color: #555;
+  line-height: 1.4;
+}
+
+.video-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.video-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border: none;
+  border-top: 1px solid rgba(0,0,0,0.06);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.95rem;
+  min-height: 44px;
+}
+.video-item:first-child { border-top: none; }
+.video-item:hover .video-item-title { text-decoration: underline; }
+.video-item-dur {
+  font-size: 0.8rem;
+  color: #888;
+  flex-shrink: 0;
+}
+
+.empty-state, .loading, .error, .muted {
+  color: #777;
+  font-size: 0.95rem;
+}
+.error { color: #b33; }
+
+/* Video modal */
+.video-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+.video-modal[hidden] { display: none; }
+.video-modal-inner {
+  width: 100%;
+  max-width: 900px;
+  position: relative;
+}
+.video-close {
+  position: absolute;
+  top: -2.5rem;
+  right: 0;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+}
+.video-title {
+  color: #fff;
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 400;
+}
+.video-wrap {
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+}
+.video-wrap video {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+@media (min-width: 600px) {
+  .conta-main { padding-top: 2.5rem; }
+  .auth-card { padding: 2.25rem 2rem; }
+}
