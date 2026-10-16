@@ -10,7 +10,7 @@ API for:
 
 ### 1. Create D1 database
 ```bash
-cd worker
+cd api
 npx wrangler d1 create academiasemente-db
 ```
 Copy the `database_id` into `wrangler.toml`.
@@ -44,7 +44,7 @@ npx wrangler secret put JWT_SECRET
 ```bash
 npx wrangler deploy
 ```
-Note the URL (e.g. `https://academiasemente.<subdomain>.workers.dev`) and put it in `js/config.js` → `WORKER_URL`.
+Note the URL (e.g. `https://academiasemente.<subdomain>.workers.dev`) and put it in `site/js/config.js` → `WORKER_URL`.
 
 ### 5. Google OAuth authorized origins
 In Google Cloud Console → Credentials → your OAuth client:
@@ -63,7 +63,7 @@ In Google Cloud Console → Credentials → your OAuth client:
 ```bash
 npx wrangler dev
 ```
-Update `WORKER_URL` in `js/config.js` to `http://127.0.0.1:8787` while testing.
+Update `WORKER_URL` in `site/js/config.js` to `http://127.0.0.1:8787` while testing.
 
 ## API overview
 

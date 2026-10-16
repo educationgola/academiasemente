@@ -41,32 +41,52 @@ Professional luxury website for **Academia Semente**, an English language academ
 
 ## Project structure
 ```
-academia-semente-website/
-├── index.html          ← home (includes contact form)
-├── inscricao.html      ← dedicated enrolment page
-├── checkout.html       ← product checkout / delivery
-├── css/styles.css
-├── js/main.js
-├── assets/
-│   └── hero.jpg
+academiasemente/                    ← GitHub repo root
+│
+├── site/                           ← Website (Cloudflare Pages)
+│   ├── index.html
+│   ├── inscricao.html
+│   ├── checkout.html
+│   ├── conta.html                  ← Student area
+│   ├── admin.html                  ← Staff panel
+│   ├── css/
+│   ├── js/
+│   │   ├── main.js
+│   │   ├── config.js               ← WORKER_URL lives here
+│   │   └── admin.js
+│   └── assets/
+│
+├── api/                            ← Cloudflare Worker (API only)
+│   ├── src/index.js
+│   ├── schema.sql
+│   ├── wrangler.toml
+│   └── README.md
+│
 └── README.md
 ```
 
-## Deploy to Cloudflare Pages
+## Deploy
 
-1. Push this folder to a GitHub repository
-2. In Cloudflare Dashboard → Pages → Create project → Connect to Git
-3. Select the repository
-4. Build settings:
+### 1. Website → Cloudflare Pages
+1. Cloudflare Dashboard → Workers & Pages → Create → Pages → Connect to Git
+2. Select the `academiasemente` repository
+3. Build settings:
    - Framework preset: **None**
    - Build command: *(leave empty)*
-   - Build output directory: `/` (or the folder containing `index.html`)
-5. Deploy
+   - Build output directory: **`site`**
+4. Deploy
 
-Alternatively, drag-and-drop the folder into Cloudflare Pages for a quick deploy.
-
-## Local preview
+### 2. API → Cloudflare Worker
 ```bash
+cd api
+npx wrangler deploy
+```
+Root of the Worker URL will return `{"error":"Not found"}` — that is normal.
+Health check: `https://academiasemente.educationgola.workers.dev/api/health`
+
+### Local preview (website)
+```bash
+cd site
 npx serve .
 # or
 python3 -m http.server 8080
@@ -358,26 +378,27 @@ The site hero keeps the original solid brand green; only the man is overlaid.
 
 ## Architecture (2026-10-15) — Student accounts + Admin + Private videos
 
-### New stack pieces
-- **Cloudflare Worker** (`worker/`) — auth API, admin, signed video URLs, catalog publish
+### Stack pieces
+- **Cloudflare Pages** (`site/`) — public website
+- **Cloudflare Worker** (`api/`) — auth API, admin, signed video URLs, catalog publish
 - **Cloudflare D1** — students, courses, videos, assignments
 - **Cloudinary** — public media + private/authenticated videos + `catalog.json`
 - **Google OAuth** + email/password for students
 - **Admin password** for staff
 
-### New pages
+### Pages
 | Page | Purpose |
 |------|---------|
 | `/conta.html` | Student login/signup (Google + email) + dashboard + private video player |
 | `/admin.html` | Staff panel: students, courses, videos, grant access |
 
 ### Setup (free tier)
-See `worker/README.md` for full steps:
-1. `npx wrangler d1 create academiasemente-db` → put `database_id` in `wrangler.toml`
+See `api/README.md` for full steps:
+1. `cd api && npx wrangler d1 create academiasemente-db` → put `database_id` in `wrangler.toml`
 2. `npx wrangler d1 execute academiasemente-db --remote --file=./schema.sql`
 3. Set secrets: `ADMIN_PASSWORD`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `GOOGLE_CLIENT_SECRET`, `JWT_SECRET`
 4. `npx wrangler deploy`
-5. Put Worker URL in `js/config.js` → `WORKER_URL`
+5. Put Worker URL in `site/js/config.js` → `WORKER_URL`
 6. Google Console: add authorized JavaScript origins (Pages URL + workers.dev + later academiasemente.com)
 
 ### Secrets policy

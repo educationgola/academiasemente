@@ -1,0 +1,12 @@
+# Wrangler / Cloudflare local cache
+.wrangler/
+api/.wrangler/
+**/wrangler/cache/
+node_modules/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/
