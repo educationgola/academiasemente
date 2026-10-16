@@ -108,7 +108,7 @@
       const data = await api('/admin/students');
       const rows = data.students || [];
       if (!rows.length) {
-        studentsTable.innerHTML = '<p class="muted">Nenhum aluno registado ainda.</p>';
+        studentsTable.innerHTML = '<div class="empty-state">Nenhum aluno registado ainda.</div>';
         return;
       }
       studentsTable.innerHTML = `
@@ -127,13 +127,13 @@
               <tr>
                 <td data-label="Aluno">
                   <strong>${esc(s.name || '—')}</strong><br>
-                  <span style="font-size:0.85rem;color:#666">${esc(s.email)}</span>
+                  <span class="student-email">${esc(s.email)}</span>
                 </td>
-                <td data-label="Estado"><span class="badge ${s.status}">${s.status}</span></td>
+                <td data-label="Estado"><span class="badge ${esc(s.status || '')}">${esc(s.status || '—')}</span></td>
                 <td data-label="Cursos">${s.courses_count || 0}</td>
-                <td data-label="Desde">${(s.created_at || '').slice(0, 10)}</td>
+                <td data-label="Desde">${(s.created_at || '').slice(0, 10) || '—'}</td>
                 <td data-label="">
-                  <button type="button" class="btn" data-grant="${s.id}" data-label="${esc(s.name || s.email)}">Atribuir curso</button>
+                  <button type="button" class="btn btn-sm" data-grant="${s.id}" data-label="${esc(s.name || s.email)}">Atribuir curso</button>
                 </td>
               </tr>
             `).join('')}
@@ -162,19 +162,21 @@
       const data = await api('/admin/courses');
       coursesCache = data.courses || [];
       if (!coursesCache.length) {
-        coursesAdmin.innerHTML = '<p class="muted">Nenhum curso criado.</p>';
+        coursesAdmin.innerHTML = '<div class="empty-state">Nenhum curso criado. Use o formulário abaixo.</div>';
         return;
       }
       coursesAdmin.innerHTML = coursesCache.map(c => `
         <div class="course-block">
-          <h4>${esc(c.title_pt)} <code style="font-size:0.75rem;color:#888">${c.id}</code></h4>
-          <p class="muted" style="margin:0 0 0.5rem">${esc(c.description_pt || '')}</p>
-          ${(c.videos || []).map(v => `
-            <div class="video-row">
-              <span>${esc(v.title_pt)}</span>
-              <code>${esc(v.cloudinary_public_id)}</code>
-            </div>
-          `).join('') || '<p class="muted">Sem vídeos</p>'}
+          <h4>${esc(c.title_pt)} <span class="course-id">${esc(c.id)}</span></h4>
+          ${c.description_pt ? `<p class="muted">${esc(c.description_pt)}</p>` : ''}
+          ${(c.videos || []).length
+            ? (c.videos || []).map(v => `
+              <div class="video-row">
+                <span>${esc(v.title_pt)}</span>
+                <code>${esc(v.cloudinary_public_id)}</code>
+              </div>
+            `).join('')
+            : '<p class="muted" style="margin:0.5rem 0 0">Sem vídeos</p>'}
         </div>
       `).join('');
     } catch (err) {

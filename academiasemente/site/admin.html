@@ -55,7 +55,7 @@
       <section id="panel-students" class="panel">
         <div class="panel-head">
           <h2>Alunos</h2>
-          <button type="button" class="btn" id="refreshStudents">Actualizar</button>
+          <button type="button" class="btn btn-outline" id="refreshStudents">Actualizar</button>
         </div>
         <div id="studentsTable" class="table-wrap">
           <p class="muted">A carregar…</p>
@@ -66,30 +66,34 @@
       <section id="panel-courses" class="panel" hidden>
         <div class="panel-head">
           <h2>Cursos & Vídeos</h2>
-          <button type="button" class="btn" id="refreshCourses">Actualizar</button>
+          <button type="button" class="btn btn-outline" id="refreshCourses">Actualizar</button>
         </div>
         <div id="coursesAdmin" class="courses-admin">
           <p class="muted">A carregar…</p>
         </div>
-        <hr>
-        <h3>Novo curso</h3>
-        <form id="courseForm" class="form-grid">
-          <label>Título (PT) <input name="title_pt" required></label>
-          <label>Título (EN) <input name="title_en"></label>
-          <label>Descrição (PT) <textarea name="description_pt" rows="2"></textarea></label>
-          <label>Cover URL <input name="cover_url" placeholder="https://…"></label>
-          <button type="submit" class="btn">Guardar curso</button>
-        </form>
-        <hr>
-        <h3>Novo / editar vídeo</h3>
-        <form id="videoForm" class="form-grid">
-          <label>Course ID <input name="course_id" required placeholder="id do curso"></label>
-          <label>Título (PT) <input name="title_pt" required></label>
-          <label>Cloudinary public_id <input name="cloudinary_public_id" required placeholder="academiasemente/private/aula-01"></label>
-          <label>Duração (segundos) <input name="duration_seconds" type="number" inputmode="numeric"></label>
-          <button type="submit" class="btn">Guardar vídeo</button>
-        </form>
-        <p class="hint">Faça upload do vídeo no Cloudinary (tipo <strong>authenticated</strong> ou private) e cole o public_id aqui.</p>
+
+        <div class="form-section">
+          <h3>Novo curso</h3>
+          <form id="courseForm" class="form-grid">
+            <label>Título (PT) <input name="title_pt" required placeholder="Ex.: Inglês A1"></label>
+            <label>Título (EN) <input name="title_en" placeholder="Optional"></label>
+            <label>Descrição (PT) <textarea name="description_pt" rows="2" placeholder="Breve descrição do curso"></textarea></label>
+            <label>Cover URL <input name="cover_url" placeholder="https://…" inputmode="url"></label>
+            <button type="submit" class="btn">Guardar curso</button>
+          </form>
+        </div>
+
+        <div class="form-section">
+          <h3>Novo / editar vídeo</h3>
+          <form id="videoForm" class="form-grid">
+            <label>Course ID <input name="course_id" required placeholder="id do curso"></label>
+            <label>Título (PT) <input name="title_pt" required placeholder="Ex.: Aula 01 — Introdução"></label>
+            <label>Cloudinary public_id <input name="cloudinary_public_id" required placeholder="academiasemente/private/aula-01"></label>
+            <label>Duração (segundos) <input name="duration_seconds" type="number" inputmode="numeric" placeholder="ex. 600"></label>
+            <button type="submit" class="btn">Guardar vídeo</button>
+          </form>
+          <p class="hint">Faça upload do vídeo no Cloudinary (tipo <strong>authenticated</strong> ou private) e cole o public_id aqui.</p>
+        </div>
       </section>
 
       <!-- Guide -->
