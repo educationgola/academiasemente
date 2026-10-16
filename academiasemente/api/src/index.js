@@ -429,8 +429,18 @@ async function sha1(message) {
 async function handleAdminLogin(request, env) {
   const body = await readBody(request);
   const password = body.password || '';
+  if (!env.ADMIN_PASSWORD) {
+    return json({
+      error: 'ADMIN_PASSWORD não está configurada no Worker. Execute: npx wrangler secret put ADMIN_PASSWORD',
+    }, 500);
+  }
   if (!password || password !== env.ADMIN_PASSWORD) {
     return json({ error: 'Palavra-passe incorrecta.' }, 401);
+  }
+  if (!env.JWT_SECRET) {
+    return json({
+      error: 'JWT_SECRET não está configurado no Worker. Execute: npx wrangler secret put JWT_SECRET',
+    }, 500);
   }
   const token = await signToken({ role: 'admin' }, env.JWT_SECRET, 60 * 60 * 12); // 12h
   return json({ token, role: 'admin' });

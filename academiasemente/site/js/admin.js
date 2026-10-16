@@ -45,6 +45,22 @@
     return data;
   }
 
+  // Show / hide password
+  const passwordInput = document.getElementById('adminPassword');
+  const togglePasswordBtn = document.getElementById('toggleAdminPassword');
+  if (togglePasswordBtn && passwordInput) {
+    togglePasswordBtn.addEventListener('click', () => {
+      const showing = passwordInput.type === 'text';
+      passwordInput.type = showing ? 'password' : 'text';
+      const eye = togglePasswordBtn.querySelector('.icon-eye');
+      const eyeOff = togglePasswordBtn.querySelector('.icon-eye-off');
+      if (eye) eye.hidden = !showing;
+      if (eyeOff) eyeOff.hidden = showing;
+      togglePasswordBtn.setAttribute('aria-label', showing ? 'Mostrar palavra-passe' : 'Ocultar palavra-passe');
+      togglePasswordBtn.title = showing ? 'Mostrar / ocultar' : 'Ocultar palavra-passe';
+    });
+  }
+
   // Login
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -58,7 +74,7 @@
       setToken(data.token);
       showApp();
     } catch (err) {
-      loginError.textContent = err.message;
+      loginError.textContent = err.message || 'Palavra-passe incorrecta.';
       loginError.hidden = false;
     }
   });

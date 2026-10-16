@@ -36,7 +36,40 @@ body {
   border-radius: 8px;
   font-size: 16px;
 }
-.login-card button {
+.password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.password-field input {
+  padding-right: 2.75rem;
+}
+.toggle-password {
+  position: absolute;
+  right: 0.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+.toggle-password:hover {
+  color: #1a1a1a;
+  background: #f0f0f0;
+}
+.toggle-password svg {
+  display: block;
+}
+.login-card > button[type="submit"] {
   width: 100%;
   padding: 0.75rem;
   background: #1a1a1a;
