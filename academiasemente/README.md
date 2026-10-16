@@ -36,40 +36,52 @@ Health check: https://academiasemente.educationgola.workers.dev/api/health
 - Facebook: https://www.facebook.com/profile.php?id=61584786747541
 
 ## Project structure
+
+GitHub repo (`educationgola/academiasemente`) has one extra nesting level:
+
 ```
-academiasemente/                    ← GitHub repo root
-│
-├── site/                           ← Website → Cloudflare Pages
-│   ├── index.html
-│   ├── inscricao.html
-│   ├── checkout.html
-│   ├── conta.html                  ← Student area
-│   ├── admin.html                  ← Staff panel
-│   ├── css/
-│   ├── js/
-│   │   ├── main.js
-│   │   ├── config.js               ← WORKER_URL
-│   │   └── admin.js
-│   └── assets/
-│
-├── api/                            ← API → Cloudflare Worker
-│   ├── src/index.js
-│   ├── schema.sql
-│   ├── wrangler.toml
-│   └── README.md
-│
-└── README.md
+educationgola/academiasemente/          ← GitHub repo root
+└── academiasemente/                    ← project root (this folder)
+    ├── site/                           ← Website → Cloudflare Pages
+    │   ├── index.html
+    │   ├── inscricao.html
+    │   ├── checkout.html
+    │   ├── conta.html                  ← Student area
+    │   ├── admin.html                  ← Staff panel
+    │   ├── css/
+    │   ├── js/
+    │   │   ├── main.js
+    │   │   ├── config.js               ← WORKER_URL
+    │   │   └── admin.js
+    │   └── assets/
+    │
+    ├── api/                            ← API → Cloudflare Worker
+    │   ├── src/index.js
+    │   ├── schema.sql
+    │   ├── wrangler.toml
+    │   └── README.md
+    │
+    └── README.md
 ```
+
+### Cloudflare build settings (important)
+
+| Project | Root directory |
+|---------|----------------|
+| **Pages** (website) | `academiasemente/site` |
+| **Worker** (API) | `academiasemente/api` |
 
 ## How to update
 
 | What you change | What to do |
 |-----------------|------------|
 | Website (HTML, CSS, JS, images in `site/`) | Push to GitHub → Pages updates automatically |
-| API (files inside `api/`) | Run the deploy command below |
+| API (files inside `api/`) | Push to GitHub → Worker Builds deploys automatically **or** run the command below |
 
-### Deploy the API (Worker)
+### Deploy the API (Worker) manually
 ```bash
+cd academiasemente/api   # from the GitHub repo root
+# or, if you are already inside the project folder:
 cd api
 npx wrangler deploy
 ```
@@ -90,6 +102,16 @@ python3 -m http.server 8080
 - Worker URL → `site/js/config.js` (`WORKER_URL`)
 
 ## Changelog
+
+### 2026-10-16 — Worker Builds fixed (nested repo path)
+**What changed**
+- Documented the actual GitHub nesting (`academiasemente/api` and `academiasemente/site`)
+- Cloudflare Worker Root directory must be set to `academiasemente/api`
+- Pages Root directory should be `academiasemente/site`
+- Worker build now succeeds after correcting the path and using a fresh build token
+
+**Files changed:**
+- `README.md`
 
 ### 2026-10-03 — Post-order (product) confirmation screen
 **What changed**
