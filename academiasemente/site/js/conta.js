@@ -52,21 +52,37 @@
     headers['Content-Type'] = 'application/json';
     var token = getToken();
     if (token) headers['Authorization'] = 'Bearer ' + token;
+    if (!API) {
+      return Promise.reject(new Error('API não configurada (WORKER_URL em config.js).'));
+    }
     return fetch(API + path, {
       method: opts.method || 'GET',
       headers: headers,
       body: opts.body ? JSON.stringify(opts.body) : undefined,
-    }).then(function (res) {
-      return res.json().then(function (data) {
-        if (!res.ok) {
-          var err = new Error(data.error || 'Erro ' + res.status);
-          err.status = res.status;
-          err.data = data;
-          throw err;
-        }
-        return data;
+    })
+      .then(function (res) {
+        return res.text().then(function (text) {
+          var data = {};
+          try {
+            data = text ? JSON.parse(text) : {};
+          } catch (e) {
+            data = { error: text || 'Resposta inválida do servidor' };
+          }
+          if (!res.ok) {
+            var err = new Error(data.error || 'Erro ' + res.status);
+            err.status = res.status;
+            err.data = data;
+            throw err;
+          }
+          return data;
+        });
+      })
+      .catch(function (err) {
+        if (err && err.status) throw err;
+        throw new Error(
+          'Não foi possível contactar o servidor. Verifique a ligação e se o Worker está activo.'
+        );
       });
-    });
   }
 
   // ---------- UI helpers ----------

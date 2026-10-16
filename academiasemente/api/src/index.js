@@ -84,12 +84,14 @@ async function sha256(text) {
   return [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-/** Simple password hashing: PBKDF2 (Web Crypto) */
+/** Password hashing: PBKDF2 (Web Crypto). 12k iterations — safe for Workers CPU limits. */
+const PBKDF2_ITERATIONS = 12000;
+
 async function hashPassword(password, salt) {
   const enc = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
   const bits = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt: enc.encode(salt), iterations: 100000, hash: 'SHA-256' },
+    { name: 'PBKDF2', salt: enc.encode(salt), iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
     keyMaterial,
     256
   );
@@ -110,41 +112,72 @@ async function makePasswordHash(password) {
   return `${salt}:${hash}`;
 }
 
+function b64encode(buf) {
+  const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+  let s = '';
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+  return btoa(s);
+}
+
+function b64encodeStr(str) {
+  return btoa(unescape(encodeURIComponent(str)));
+}
+
+function b64decodeStr(str) {
+  try {
+    return decodeURIComponent(escape(atob(str)));
+  } catch {
+    try {
+      return atob(str);
+    } catch {
+      return null;
+    }
+  }
+}
+
 /** Very simple JWT-like token (HMAC-SHA256). Not a full JWT library. */
 async function signToken(payload, secret, expiresInSec = 60 * 60 * 24 * 7) {
-  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const body = btoa(JSON.stringify({ ...payload, exp: Math.floor(Date.now() / 1000) + expiresInSec }));
+  if (!secret) throw new Error('JWT_SECRET is not configured on the Worker');
+  const header = b64encodeStr(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const body = b64encodeStr(JSON.stringify({ ...payload, exp: Math.floor(Date.now() / 1000) + expiresInSec }));
   const data = `${header}.${body}`;
   const key = await crypto.subtle.importKey(
     'raw',
-    new TextEncoder().encode(secret),
+    new TextEncoder().encode(String(secret)),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign']
   );
   const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data));
-  const signature = btoa(String.fromCharCode(...new Uint8Array(sig)));
+  const signature = b64encode(sig);
   return `${data}.${signature}`;
 }
 
 async function verifyToken(token, secret) {
-  if (!token) return null;
+  if (!token || !secret) return null;
   const parts = token.split('.');
   if (parts.length !== 3) return null;
   const [header, body, signature] = parts;
   const data = `${header}.${body}`;
-  const key = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['verify']
-  );
-  const sigBytes = Uint8Array.from(atob(signature), c => c.charCodeAt(0));
-  const valid = await crypto.subtle.verify('HMAC', key, sigBytes, new TextEncoder().encode(data));
-  if (!valid) return null;
   try {
-    const payload = JSON.parse(atob(body));
+    const key = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(String(secret)),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['verify']
+    );
+    let sigBytes;
+    try {
+      sigBytes = Uint8Array.from(atob(signature), c => c.charCodeAt(0));
+    } catch {
+      return null;
+    }
+    const valid = await crypto.subtle.verify('HMAC', key, sigBytes, new TextEncoder().encode(data));
+    if (!valid) return null;
+    const json = b64decodeStr(body);
+    if (!json) return null;
+    const payload = JSON.parse(json);
     if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
     return payload;
   } catch {
@@ -182,6 +215,9 @@ async function requireAdmin(request, env) {
 // ==================== Auth handlers ====================
 
 async function handleRegister(request, env) {
+  if (!env.DB) return json({ error: 'Database not configured' }, 500);
+  if (!env.JWT_SECRET) return json({ error: 'JWT_SECRET not configured. Run: wrangler secret put JWT_SECRET' }, 500);
+
   const body = await readBody(request);
   const email = (body.email || '').trim().toLowerCase();
   const password = body.password || '';
@@ -209,6 +245,9 @@ async function handleRegister(request, env) {
 }
 
 async function handleLogin(request, env) {
+  if (!env.DB) return json({ error: 'Database not configured' }, 500);
+  if (!env.JWT_SECRET) return json({ error: 'JWT_SECRET not configured. Run: wrangler secret put JWT_SECRET' }, 500);
+
   const body = await readBody(request);
   const email = (body.email || '').trim().toLowerCase();
   const password = body.password || '';
@@ -237,6 +276,9 @@ async function handleLogin(request, env) {
 }
 
 async function handleGoogle(request, env) {
+  if (!env.DB) return json({ error: 'Database not configured' }, 500);
+  if (!env.JWT_SECRET) return json({ error: 'JWT_SECRET not configured. Run: wrangler secret put JWT_SECRET' }, 500);
+
   const body = await readBody(request);
   const idToken = body.credential || body.id_token;
   if (!idToken) return json({ error: 'Missing Google credential' }, 400);
