@@ -46,12 +46,16 @@ educationgola/academiasemente/          ← GitHub repo root
     │   ├── index.html
     │   ├── inscricao.html
     │   ├── checkout.html
-    │   ├── conta.html                  ← Student area
+    │   ├── conta.html                  ← Student area (Entrar)
     │   ├── admin.html                  ← Staff panel
     │   ├── css/
+    │   │   ├── styles.css
+    │   │   ├── conta.css
+    │   │   └── admin.css
     │   ├── js/
-    │   │   ├── main.js
-    │   │   ├── config.js               ← WORKER_URL
+    │   │   ├── main.js                 ← Site UI, i18n, cart
+    │   │   ├── config.js               ← WORKER_URL, Google Client ID
+    │   │   ├── conta.js                ← Student auth + dashboard
     │   │   └── admin.js
     │   └── assets/
     │
@@ -101,7 +105,32 @@ python3 -m http.server 8080
 - Hero image → `site/assets/hero.jpg`
 - Worker URL → `site/js/config.js` (`WORKER_URL`)
 
+## Student area & auth
+
+- Page: `site/conta.html` (nav label: **Entrar**)
+- Auth: Google Identity Services (ID token) + email/password
+- Backend: Worker `/api/auth/*` + D1 `users` table
+- New accounts are **pending** until staff grants a course in `admin.html`
+- Google Console → Authorized JavaScript origins must include `https://academiasemente.pages.dev` (redirect URIs not needed)
+
+Secrets (Worker only, never in git): `JWT_SECRET`, `ADMIN_PASSWORD`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`.  
+See `api/README.md` for full setup.
+
 ## Changelog
+
+### 2026-10-16 — Student auth live + UI polish
+**What changed**
+- Student area (`conta.html` + `conta.js` + `conta.css`) branded like the main site
+- Google + email/password auth against the Worker; PBKDF2 iterations lowered for Workers CPU limits
+- Nav: “Área do aluno” → **Entrar**; link added on inscrição/checkout; WhatsApp removed from mobile drawer
+- Header brand hierarchy (larger ACADEMIA SEMENTE); products grid 2 columns on mobile
+- Worker secrets + D1 schema applied; deploy to `academiasemente.educationgola.workers.dev`
+
+**Files changed:**
+- `site/conta.html`, `site/css/conta.css`, `site/js/conta.js` (new)
+- `site/index.html`, `site/inscricao.html`, `site/checkout.html`
+- `site/css/styles.css`, `site/js/main.js`, `site/js/config.js`
+- `api/src/index.js`, `api/README.md`, `README.md`
 
 ### 2026-10-16 — Worker Builds fixed (nested repo path)
 **What changed**
