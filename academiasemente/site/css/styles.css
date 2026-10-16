@@ -204,7 +204,7 @@ h1, h2, h3, h4 {
   position: relative;
 }
 
-/* Brand — centered */
+/* Brand — centered (Kylie-style: large name, smaller tagline) */
 .brand {
   position: absolute;
   left: 50%;
@@ -214,26 +214,31 @@ h1, h2, h3, h4 {
   align-items: center;
   text-align: center;
   transition: color var(--trans);
+  max-width: calc(100% - 140px); /* leave room for hamburger + cart on narrow phones */
+  pointer-events: auto;
+  z-index: 1;
 }
 
 .brand-name {
   font-family: 'Inter', sans-serif;
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.16em;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--white);
-  line-height: 1.3;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .brand-tagline {
   font-family: 'Inter', sans-serif;
-  font-size: 0.58rem;
+  font-size: 0.52rem;
   font-weight: 300;
-  letter-spacing: 0.28em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
   color: rgba(255,255,255,0.7);
-  margin-top: 2px;
+  margin-top: 3px;
+  white-space: nowrap;
 }
 
 /* Hamburger */
@@ -247,6 +252,7 @@ h1, h2, h3, h4 {
   cursor: pointer;
   z-index: 10;
   padding: 0;
+  flex-shrink: 0;
 }
 
 .ham-line {
@@ -275,8 +281,9 @@ h1, h2, h3, h4 {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
   z-index: 10;
+  flex-shrink: 0;
 }
 
 .cart-btn {
@@ -403,8 +410,16 @@ h1, h2, h3, h4 {
   .header-inner {
     height: 64px;
   }
-  .site-header {
-    /* taller to accommodate nav below brand */
+  .brand {
+    max-width: none;
+  }
+  .brand-name {
+    font-size: 1.05rem;
+    letter-spacing: 0.14em;
+  }
+  .brand-tagline {
+    font-size: 0.55rem;
+    letter-spacing: 0.26em;
   }
 }
 
@@ -1136,12 +1151,13 @@ h1, h2, h3, h4 {
 
 .products-grid {
   display: grid;
-  gap: 1.5rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
 }
 
 @media (min-width: 640px) {
   .products-grid {
-    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
   }
 }
 
@@ -1308,12 +1324,34 @@ h1, h2, h3, h4 {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .product-price .price {
   font-size: 0.95rem;
   font-weight: 500;
   color: var(--accent);
+}
+
+/* Tighter product cards in 2-col mobile */
+@media (max-width: 639px) {
+  .product-info {
+    padding: 0.9rem 0.85rem 1rem;
+  }
+  .product-info h3 {
+    font-size: 0.95rem;
+  }
+  .product-info p {
+    font-size: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  .product-price .price {
+    font-size: 0.85rem;
+  }
+  .product-price .btn {
+    padding: 0.45rem 0.7rem;
+    font-size: 0.65rem;
+  }
 }
 
 /* ========== DIFERENCIAIS ========== */
@@ -2211,6 +2249,34 @@ h1, h2, h3, h4 {
   .site-header.scrolled .brand-name,
   .site-header.scrolled .brand-tagline {
     color: var(--text);
+  }
+}
+
+/* Very narrow phones: prevent brand overlapping cart/hamburger */
+@media (max-width: 400px) {
+  .header-inner {
+    padding: 0 0.85rem;
+  }
+  .brand {
+    max-width: calc(100% - 120px);
+  }
+  .brand-name {
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+  }
+  .brand-tagline {
+    font-size: 0.45rem;
+    letter-spacing: 0.14em;
+  }
+  .header-actions {
+    gap: 0.4rem;
+  }
+  .lang-toggle {
+    gap: 3px;
+  }
+  .cart-btn {
+    width: 36px;
+    height: 36px;
   }
 }
 

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="Área do aluno — Academia Semente">
-  <title>Minha Conta | Academia Semente</title>
+  <meta name="description" content="Entrar — Academia Semente. Aceda aos seus cursos e vídeos privados.">
+  <title>Entrar | Academia Semente</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -18,7 +18,7 @@
   <header class="conta-header">
     <a href="index.html" class="brand">
       <span class="brand-name">ACADEMIA SEMENTE</span>
-      <span class="brand-tagline">Área do aluno</span>
+      <span class="brand-tagline">Cultivando conhecimento</span>
     </a>
     <div class="conta-header-actions" id="headerActions">
       <!-- filled by JS when logged in -->
@@ -29,26 +29,11 @@
     <!-- ========== AUTH VIEWS ========== -->
     <section id="authSection" class="auth-section">
       <div class="auth-card">
-        <h1 class="auth-title">Entrar na sua conta</h1>
+        <h1 class="auth-title">Entrar</h1>
         <p class="auth-subtitle">Aceda aos seus cursos e vídeos privados</p>
 
-        <!-- Google button container -->
-        <div id="googleBtnWrapper" class="google-btn-wrapper">
-          <div id="g_id_onload"
-               data-client_id=""
-               data-callback="onGoogleCredential"
-               data-auto_prompt="false">
-          </div>
-          <div class="g_id_signin"
-               data-type="standard"
-               data-size="large"
-               data-theme="outline"
-               data-text="continue_with"
-               data-shape="rectangular"
-               data-logo_alignment="left"
-               data-width="320">
-          </div>
-        </div>
+        <!-- Google button (rendered by conta.js with client_id from config) -->
+        <div id="googleBtnWrapper" class="google-btn-wrapper"></div>
 
         <div class="auth-divider"><span>ou</span></div>
 
