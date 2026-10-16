@@ -1,38 +1,34 @@
-# Academia Semente — Website
+# Academia Semente
 
 Professional luxury website for **Academia Semente**, an English language academy in Angola.
 
+## Live URLs
+
+| Piece | URL | What it is |
+|-------|-----|------------|
+| **Website** | https://academiasemente.pages.dev | Public site (share this) |
+| **API** | https://academiasemente.educationgola.workers.dev | Backend only (`/api/...`) |
+
+Root of the Worker returns `{"error":"Not found"}` — that is normal.  
+Health check: https://academiasemente.educationgola.workers.dev/api/health
+
 ## Stack
-- Pure HTML / CSS / JS
-- No build step required
-- Ready for **Cloudflare Pages** + GitHub
+- **Website**: Pure HTML / CSS / JS → Cloudflare Pages
+- **API**: Cloudflare Worker + D1 + Cloudinary
+- No build step for the website
 
 ## Features
 - Mobile-first, fully responsive
 - Portuguese (default) + English language toggle
 - Luxury visual style: thin 1–1.5px lines, generous whitespace, light typography
-- Transparent → solid header on scroll (fixed dark-text state)
-- Thin-line hamburger with elegant X animation
-- Left slide-in mobile drawer
-- Announcement bar that hides on scroll
-- Hero with reception desk image
-- Services & pricing section (Online / Presencial / Domiciliar)
-- Service cards link to **dedicated enrolment page** and pre-select the course (`?course=`)
-- Physical products shop with **shopping cart**
-  - Add to cart, quantity +/−, remove item
-  - Clear all, total
-  - Cart drawer slides from the right; swipe to close on mobile
-  - Cart persists in localStorage
-  - **Checkout page** (`checkout.html`): order summary + delivery form → WhatsApp
-- **Contact section** on home (`#contacto`) with general message form → WhatsApp
-- **Dedicated enrolment page** (`inscricao.html`) with full form:
-  - Nome, Telefone, Morada *, Província *, Município *
-  - Curso pretendido, Horários disponíveis * (08h–10h Manhã / 14h–16h Tarde / Flexível)
-  - Submits to WhatsApp with pre-filled enrolment message
-- Contact details also in the **footer**
-- Smooth scroll navigation
+- Transparent → solid header on scroll
+- Services & pricing (Online / Presencial / Domiciliar) → enrolment page
+- Physical products shop with shopping cart + checkout
+- Contact form and enrolment form → WhatsApp
+- Student area (`conta.html`): Google + email/password login, private videos
+- Admin panel (`admin.html`): students, courses, grant access
 
-## Contact data (footer + contact section)
+## Contact
 - WhatsApp: +244 945 574 700
 - Email: academiasemente@gmail.com
 - Location: Kilamba, Ed R29, Andar 6, Ap 63, Luanda, Angola
@@ -43,7 +39,7 @@ Professional luxury website for **Academia Semente**, an English language academ
 ```
 academiasemente/                    ← GitHub repo root
 │
-├── site/                           ← Website (Cloudflare Pages)
+├── site/                           ← Website → Cloudflare Pages
 │   ├── index.html
 │   ├── inscricao.html
 │   ├── checkout.html
@@ -52,11 +48,11 @@ academiasemente/                    ← GitHub repo root
 │   ├── css/
 │   ├── js/
 │   │   ├── main.js
-│   │   ├── config.js               ← WORKER_URL lives here
+│   │   ├── config.js               ← WORKER_URL
 │   │   └── admin.js
 │   └── assets/
 │
-├── api/                            ← Cloudflare Worker (API only)
+├── api/                            ← API → Cloudflare Worker
 │   ├── src/index.js
 │   ├── schema.sql
 │   ├── wrangler.toml
@@ -65,24 +61,18 @@ academiasemente/                    ← GitHub repo root
 └── README.md
 ```
 
-## Deploy
+## How to update
 
-### 1. Website → Cloudflare Pages
-1. Cloudflare Dashboard → Workers & Pages → Create → Pages → Connect to Git
-2. Select the `academiasemente` repository
-3. Build settings:
-   - Framework preset: **None**
-   - Build command: *(leave empty)*
-   - Build output directory: **`site`**
-4. Deploy
+| What you change | What to do |
+|-----------------|------------|
+| Website (HTML, CSS, JS, images in `site/`) | Push to GitHub → Pages updates automatically |
+| API (files inside `api/`) | Run the deploy command below |
 
-### 2. API → Cloudflare Worker
+### Deploy the API (Worker)
 ```bash
 cd api
 npx wrangler deploy
 ```
-Root of the Worker URL will return `{"error":"Not found"}` — that is normal.
-Health check: `https://academiasemente.educationgola.workers.dev/api/health`
 
 ### Local preview (website)
 ```bash
@@ -93,10 +83,11 @@ python3 -m http.server 8080
 ```
 
 ## Customisation
-- Brand colours → CSS variables in `css/styles.css` (`:root`)
-- All text content → `js/main.js` (`translations` object)
-- Prices & product details → `index.html`
-- Hero image → `assets/hero.jpg`
+- Brand colours → `site/css/styles.css` (`:root`)
+- All text content → `site/js/main.js` (`translations` object)
+- Prices & product details → `site/index.html`
+- Hero image → `site/assets/hero.jpg`
+- Worker URL → `site/js/config.js` (`WORKER_URL`)
 
 ## Changelog
 
@@ -413,4 +404,4 @@ See `api/README.md` for full steps:
 ### Next iterations (planned)
 - Full admin media library + site image slots + publish catalog (blueprint style)
 - Link “Área do aluno” in public header/nav
-- Custom domain `academiasemente.com`
+- Custom domain `academiasemente.com` (when purchased)
