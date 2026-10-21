@@ -57,6 +57,17 @@
           <h2>Alunos</h2>
           <button type="button" class="btn btn-outline" id="refreshStudents">Actualizar</button>
         </div>
+        <div class="students-toolbar">
+          <input type="search" id="studentSearch" placeholder="Pesquisar nome ou email…" autocomplete="off">
+          <select id="studentStatusFilter">
+            <option value="">Todos os estados</option>
+            <option value="pending">Pending</option>
+            <option value="active">Active</option>
+            <option value="suspended">Suspended</option>
+          </select>
+          <button type="button" class="btn btn-sm btn-danger" id="bulkDeleteProbes" title="Apaga contas de teste (email com test.com / example.com / probe)">Limpar probes</button>
+        </div>
+        <p class="muted" id="studentsCount" style="margin:0 0 0.75rem"></p>
         <div id="studentsTable" class="table-wrap">
           <p class="muted">A carregar…</p>
         </div>
@@ -157,6 +168,31 @@
         <button type="button" class="btn-text" id="revokeCancel">Cancelar</button>
         <button type="button" class="btn btn-danger" id="revokeConfirm">Revogar</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Edit student modal -->
+  <div id="editStudentModal" class="modal" hidden>
+    <div class="modal-card">
+      <h3>Editar aluno</h3>
+      <p id="editStudentEmail" class="muted"></p>
+      <form id="editStudentForm" class="form-grid" style="max-width:none;margin-top:1rem">
+        <input type="hidden" name="id" id="editStudentId">
+        <label>Nome <input name="name" id="editStudentName" placeholder="Nome"></label>
+        <label>Telefone <input name="phone" id="editStudentPhone" placeholder="+244 …" inputmode="tel"></label>
+        <label>Estado
+          <select name="status" id="editStudentStatus">
+            <option value="pending">pending</option>
+            <option value="active">active</option>
+            <option value="suspended">suspended</option>
+          </select>
+        </label>
+        <div id="editStudentHistory" class="student-history muted"></div>
+        <div class="modal-actions" style="margin-top:0.5rem">
+          <button type="button" class="btn-text" id="editStudentCancel">Cancelar</button>
+          <button type="submit" class="btn">Guardar</button>
+        </div>
+      </form>
     </div>
   </div>
 

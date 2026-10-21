@@ -121,67 +121,144 @@
 
   // ==================== Students ====================
 
+  const studentSearch = document.getElementById('studentSearch');
+  const studentStatusFilter = document.getElementById('studentStatusFilter');
+  const studentsCount = document.getElementById('studentsCount');
+  const editStudentModal = document.getElementById('editStudentModal');
+  const editStudentForm = document.getElementById('editStudentForm');
+
+  function isProbeEmail(email) {
+    const e = (email || '').toLowerCase();
+    return (
+      e.includes('test.com') ||
+      e.includes('example.com') ||
+      e.includes('probe') ||
+      e.endsWith('@test.com') ||
+      /probe-?\d*/.test(e)
+    );
+  }
+
+  function getFilteredStudents() {
+    const q = ((studentSearch && studentSearch.value) || '').trim().toLowerCase();
+    const st = (studentStatusFilter && studentStatusFilter.value) || '';
+    return studentsCache.filter((s) => {
+      if (st && s.status !== st) return false;
+      if (!q) return true;
+      const hay = ((s.name || '') + ' ' + (s.email || '') + ' ' + (s.phone || '')).toLowerCase();
+      return hay.includes(q);
+    });
+  }
+
+  function renderStudents() {
+    const rows = getFilteredStudents();
+    if (studentsCount) {
+      studentsCount.textContent = rows.length
+        ? `${rows.length} aluno(s)${rows.length !== studentsCache.length ? ` de ${studentsCache.length}` : ''}`
+        : studentsCache.length
+          ? 'Nenhum resultado para este filtro.'
+          : '';
+    }
+    if (!studentsCache.length) {
+      studentsTable.innerHTML = '<div class="empty-state">Nenhum aluno registado ainda.</div>';
+      return;
+    }
+    if (!rows.length) {
+      studentsTable.innerHTML = '<div class="empty-state">Nenhum aluno corresponde à pesquisa.</div>';
+      return;
+    }
+    studentsTable.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Nome / Email</th>
+            <th>Estado</th>
+            <th>Cursos</th>
+            <th>Desde</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows
+            .map((s) => {
+              const courses = s.courses || [];
+              const history = s.course_history || [];
+              const courseChips = courses.length
+                ? courses.map((c) => `<span class="chip">${esc(c.title_pt)}</span>`).join(' ')
+                : '<span class="muted">—</span>';
+              const revokedCount = history.filter((h) => h.status === 'revoked').length;
+              return `
+            <tr>
+              <td data-label="Aluno">
+                <strong>${esc(s.name || '—')}</strong><br>
+                <span class="student-email">${esc(s.email)}</span>
+                ${s.phone ? `<br><span class="student-email">${esc(s.phone)}</span>` : ''}
+              </td>
+              <td data-label="Estado">
+                <select class="status-select" data-status-id="${s.id}" title="Alterar estado">
+                  <option value="pending"${s.status === 'pending' ? ' selected' : ''}>pending</option>
+                  <option value="active"${s.status === 'active' ? ' selected' : ''}>active</option>
+                  <option value="suspended"${s.status === 'suspended' ? ' selected' : ''}>suspended</option>
+                </select>
+              </td>
+              <td data-label="Cursos" class="courses-cell">
+                ${courseChips}
+                ${revokedCount ? `<br><span class="muted" style="font-size:0.75rem">${revokedCount} revogado(s)</span>` : ''}
+              </td>
+              <td data-label="Desde">${(s.created_at || '').slice(0, 10) || '—'}</td>
+              <td data-label="" class="actions-cell">
+                <button type="button" class="btn btn-sm" data-grant="${s.id}" data-label="${esc(s.name || s.email)}">Atribuir</button>
+                ${
+                  courses.length
+                    ? `<button type="button" class="btn btn-sm btn-outline" data-revoke="${s.id}" data-label="${esc(s.name || s.email)}">Revogar</button>`
+                    : ''
+                }
+                <button type="button" class="btn btn-sm btn-outline" data-edit="${s.id}">Editar</button>
+                <button type="button" class="btn btn-sm btn-danger" data-del-student="${s.id}" data-label="${esc(s.name || s.email)}">Eliminar</button>
+              </td>
+            </tr>`;
+            })
+            .join('')}
+        </tbody>
+      </table>
+    `;
+    studentsTable.querySelectorAll('[data-grant]').forEach((btn) => {
+      btn.addEventListener('click', () => openGrant(btn.dataset.grant, btn.dataset.label));
+    });
+    studentsTable.querySelectorAll('[data-revoke]').forEach((btn) => {
+      btn.addEventListener('click', () => openRevoke(btn.dataset.revoke, btn.dataset.label));
+    });
+    studentsTable.querySelectorAll('[data-edit]').forEach((btn) => {
+      btn.addEventListener('click', () => openEditStudent(btn.dataset.edit));
+    });
+    studentsTable.querySelectorAll('[data-del-student]').forEach((btn) => {
+      btn.addEventListener('click', () => deleteStudent(btn.dataset.delStudent, btn.dataset.label));
+    });
+    studentsTable.querySelectorAll('.status-select').forEach((sel) => {
+      sel.addEventListener('change', async () => {
+        const id = sel.dataset.statusId;
+        const status = sel.value;
+        try {
+          await api('/admin/students/update', {
+            method: 'POST',
+            body: JSON.stringify({ id, status }),
+          });
+          const s = studentsCache.find((x) => x.id === id);
+          if (s) s.status = status;
+          renderStudents();
+        } catch (err) {
+          alert(err.message);
+          loadStudents();
+        }
+      });
+    });
+  }
+
   async function loadStudents() {
     studentsTable.innerHTML = '<p class="muted">A carregar…</p>';
     try {
       const data = await api('/admin/students');
       studentsCache = data.students || [];
-      if (!studentsCache.length) {
-        studentsTable.innerHTML = '<div class="empty-state">Nenhum aluno registado ainda.</div>';
-        return;
-      }
-      studentsTable.innerHTML = `
-        <table>
-          <thead>
-            <tr>
-              <th>Nome / Email</th>
-              <th>Estado</th>
-              <th>Cursos</th>
-              <th>Desde</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            ${studentsCache
-              .map((s) => {
-                const courses = s.courses || [];
-                const courseChips = courses.length
-                  ? courses
-                      .map(
-                        (c) =>
-                          `<span class="chip">${esc(c.title_pt)}</span>`
-                      )
-                      .join(' ')
-                  : '<span class="muted">—</span>';
-                return `
-              <tr>
-                <td data-label="Aluno">
-                  <strong>${esc(s.name || '—')}</strong><br>
-                  <span class="student-email">${esc(s.email)}</span>
-                </td>
-                <td data-label="Estado"><span class="badge ${esc(s.status || '')}">${esc(s.status || '—')}</span></td>
-                <td data-label="Cursos" class="courses-cell">${courseChips}</td>
-                <td data-label="Desde">${(s.created_at || '').slice(0, 10) || '—'}</td>
-                <td data-label="" class="actions-cell">
-                  <button type="button" class="btn btn-sm" data-grant="${s.id}" data-label="${esc(s.name || s.email)}">Atribuir</button>
-                  ${
-                    courses.length
-                      ? `<button type="button" class="btn btn-sm btn-outline" data-revoke="${s.id}" data-label="${esc(s.name || s.email)}">Revogar</button>`
-                      : ''
-                  }
-                </td>
-              </tr>`;
-              })
-              .join('')}
-          </tbody>
-        </table>
-      `;
-      studentsTable.querySelectorAll('[data-grant]').forEach((btn) => {
-        btn.addEventListener('click', () => openGrant(btn.dataset.grant, btn.dataset.label));
-      });
-      studentsTable.querySelectorAll('[data-revoke]').forEach((btn) => {
-        btn.addEventListener('click', () => openRevoke(btn.dataset.revoke, btn.dataset.label));
-      });
+      renderStudents();
     } catch (err) {
       if (err.status === 401) {
         clearToken();
@@ -193,6 +270,33 @@
   }
 
   document.getElementById('refreshStudents').addEventListener('click', loadStudents);
+  if (studentSearch) studentSearch.addEventListener('input', renderStudents);
+  if (studentStatusFilter) studentStatusFilter.addEventListener('change', renderStudents);
+
+  const bulkDeleteProbes = document.getElementById('bulkDeleteProbes');
+  if (bulkDeleteProbes) {
+    bulkDeleteProbes.addEventListener('click', async () => {
+      const probes = studentsCache.filter((s) => isProbeEmail(s.email));
+      if (!probes.length) {
+        alert('Nenhuma conta probe/test encontrada.');
+        return;
+      }
+      if (!confirm(`Apagar ${probes.length} conta(s) de teste permanentemente?`)) return;
+      try {
+        for (const s of probes) {
+          await api('/admin/students/delete', {
+            method: 'POST',
+            body: JSON.stringify({ id: s.id }),
+          });
+        }
+        await loadStudents();
+        alert(`${probes.length} conta(s) apagada(s).`);
+      } catch (err) {
+        alert(err.message);
+        loadStudents();
+      }
+    });
+  }
 
   function openGrant(userId, label) {
     grantUserId = userId;
@@ -255,6 +359,73 @@
       alert(err.message);
     }
   });
+
+  function openEditStudent(id) {
+    const s = studentsCache.find((x) => x.id === id);
+    if (!s || !editStudentModal) return;
+    document.getElementById('editStudentId').value = s.id;
+    document.getElementById('editStudentEmail').textContent = s.email || '';
+    document.getElementById('editStudentName').value = s.name || '';
+    document.getElementById('editStudentPhone').value = s.phone || '';
+    document.getElementById('editStudentStatus').value = s.status || 'pending';
+    const histEl = document.getElementById('editStudentHistory');
+    const history = s.course_history || [];
+    if (histEl) {
+      histEl.innerHTML = history.length
+        ? '<strong style="color:inherit">Histórico de cursos</strong><ul style="margin:0.35rem 0 0;padding-left:1.1rem">' +
+          history
+            .map(
+              (h) =>
+                `<li>${esc(h.title_pt)} — <em>${esc(h.status)}</em>${h.granted_at ? ' · ' + String(h.granted_at).slice(0, 10) : ''}</li>`
+            )
+            .join('') +
+          '</ul>'
+        : '<span>Sem histórico de cursos.</span>';
+    }
+    editStudentModal.hidden = false;
+  }
+
+  const editStudentCancel = document.getElementById('editStudentCancel');
+  if (editStudentCancel) {
+    editStudentCancel.addEventListener('click', () => {
+      editStudentModal.hidden = true;
+    });
+  }
+
+  if (editStudentForm) {
+    editStudentForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('editStudentId').value;
+      const name = document.getElementById('editStudentName').value;
+      const phone = document.getElementById('editStudentPhone').value;
+      const status = document.getElementById('editStudentStatus').value;
+      try {
+        await api('/admin/students/update', {
+          method: 'POST',
+          body: JSON.stringify({ id, name, phone, status }),
+        });
+        editStudentModal.hidden = true;
+        loadStudents();
+        alert('Aluno actualizado.');
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+  }
+
+  async function deleteStudent(id, label) {
+    if (!confirm(`Eliminar permanentemente o aluno «${label}»? Esta acção não se pode desfazer.`)) return;
+    try {
+      await api('/admin/students/delete', {
+        method: 'POST',
+        body: JSON.stringify({ id }),
+      });
+      loadStudents();
+      alert('Aluno eliminado.');
+    } catch (err) {
+      alert(err.message);
+    }
+  }
 
   // ==================== Courses ====================
 

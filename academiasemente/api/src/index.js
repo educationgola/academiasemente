@@ -45,6 +45,8 @@ export default {
       if (path === '/api/admin/students' && request.method === 'GET') return handleListStudents(request, env);
       if (path === '/api/admin/students/grant' && request.method === 'POST') return handleGrantCourse(request, env);
       if (path === '/api/admin/students/revoke' && request.method === 'POST') return handleRevokeCourse(request, env);
+      if (path === '/api/admin/students/update' && request.method === 'POST') return handleUpdateStudent(request, env);
+      if (path === '/api/admin/students/delete' && request.method === 'POST') return handleDeleteStudent(request, env);
       if (path === '/api/admin/courses' && request.method === 'GET') return handleListCourses(request, env);
       if (path === '/api/admin/courses' && request.method === 'POST') return handleUpsertCourse(request, env);
       if (path === '/api/admin/courses/delete' && request.method === 'POST') return handleDeleteCourse(request, env);
@@ -492,26 +494,70 @@ async function handlePublish(request, env) {
 async function handleListStudents(request, env) {
   await requireAdmin(request, env);
   const { results } = await env.DB.prepare(`
-    SELECT u.id, u.email, u.name, u.picture, u.status, u.phone, u.created_at,
+    SELECT u.id, u.email, u.name, u.picture, u.status, u.phone, u.created_at, u.updated_at,
            (SELECT COUNT(*) FROM user_courses uc WHERE uc.user_id = u.id AND uc.status = 'active') AS courses_count
     FROM users u
     ORDER BY u.created_at DESC
     LIMIT 500
   `).all();
 
-  // Attach active course grants for revoke UI
+  // Attach all grants (active + history) for admin UI
   for (const s of results) {
     const { results: grants } = await env.DB.prepare(`
-      SELECT uc.course_id, c.title_pt, uc.granted_at, uc.status
+      SELECT uc.course_id, c.title_pt, uc.granted_at, uc.status, uc.expires_at
       FROM user_courses uc
       JOIN courses c ON c.id = uc.course_id
-      WHERE uc.user_id = ? AND uc.status = 'active'
-      ORDER BY c.title_pt
+      WHERE uc.user_id = ?
+      ORDER BY uc.status ASC, c.title_pt
     `).bind(s.id).all();
-    s.courses = grants || [];
+    const all = grants || [];
+    s.courses = all.filter((g) => g.status === 'active');
+    s.course_history = all;
   }
 
   return json({ students: results });
+}
+
+async function handleUpdateStudent(request, env) {
+  await requireAdmin(request, env);
+  const body = await readBody(request);
+  if (!body.id) return json({ error: 'id required' }, 400);
+
+  const allowedStatus = ['pending', 'active', 'suspended'];
+  const user = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(body.id).first();
+  if (!user) return json({ error: 'Aluno não encontrado' }, 404);
+
+  const name = body.name !== undefined ? (body.name || null) : user.name;
+  const phone = body.phone !== undefined ? (body.phone || null) : user.phone;
+  let status = user.status;
+  if (body.status !== undefined) {
+    if (!allowedStatus.includes(body.status)) {
+      return json({ error: 'status inválido (pending|active|suspended)' }, 400);
+    }
+    status = body.status;
+  }
+
+  await env.DB.prepare(`
+    UPDATE users SET name = ?, phone = ?, status = ?, updated_at = datetime('now') WHERE id = ?
+  `).bind(name, phone, status, body.id).run();
+
+  return json({
+    ok: true,
+    user: { id: body.id, email: user.email, name, phone, status },
+  });
+}
+
+async function handleDeleteStudent(request, env) {
+  await requireAdmin(request, env);
+  const body = await readBody(request);
+  if (!body.id) return json({ error: 'id required' }, 400);
+
+  // Cascades: user_courses and sessions have ON DELETE CASCADE in schema
+  await env.DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(body.id).run();
+  await env.DB.prepare('DELETE FROM user_courses WHERE user_id = ?').bind(body.id).run();
+  await env.DB.prepare('DELETE FROM users WHERE id = ?').bind(body.id).run();
+
+  return json({ ok: true });
 }
 
 async function handleGrantCourse(request, env) {
