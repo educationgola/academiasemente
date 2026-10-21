@@ -110,7 +110,14 @@
         <button type="button" class="video-close" id="videoClose" aria-label="Fechar">×</button>
         <h3 id="videoTitle" class="video-title"></h3>
         <div class="video-wrap">
-          <video id="videoPlayer" controls playsinline preload="metadata"></video>
+          <video
+            id="videoPlayer"
+            controls
+            controlsList="nodownload noplaybackrate"
+            disablePictureInPicture
+            playsinline
+            preload="metadata"
+          ></video>
         </div>
       </div>
     </div>

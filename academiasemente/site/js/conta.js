@@ -421,8 +421,25 @@
     if (videoPlayer) {
       videoPlayer.pause();
       videoPlayer.removeAttribute('src');
+      // Clear source so the URL is not left in the DOM for easy copy
+      try {
+        videoPlayer.load();
+      } catch (e) {}
     }
     if (videoModal) videoModal.hidden = true;
+  }
+
+  // Discourage casual download / “Save video as…”
+  if (videoPlayer) {
+    videoPlayer.addEventListener('contextmenu', function (e) {
+      e.preventDefault();
+    });
+    // Block keyboard shortcuts that some browsers use to download media
+    videoPlayer.addEventListener('keydown', function (e) {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+      }
+    });
   }
 
   if (videoClose) videoClose.addEventListener('click', closeVideo);
