@@ -389,46 +389,51 @@ async function handleSignedVideoUrl(request, env, videoId) {
 
   if (!row) return json({ error: 'Acesso negado ou vídeo não encontrado.' }, 403);
 
-  // Generate Cloudinary signed URL (authenticated delivery)
-  // Docs: https://cloudinary.com/documentation/authentication_signatures
-  const cloudName = env.CLOUDINARY_CLOUD_NAME;
+  if (!env.CLOUDINARY_API_SECRET) {
+    return json({ error: 'Cloudinary não configurado no Worker.' }, 500);
+  }
+
+  // Authenticated delivery signed URL
+  // Docs: https://cloudinary.com/documentation/delivery_url_signatures
+  // Signature = first 8 chars of URL-safe base64(SHA-1( path_after_signature + api_secret ))
+  // path_after_signature = [transformations/][version/]public_id[.format]
+  const cloudName = env.CLOUDINARY_CLOUD_NAME || 'lfoop5b8';
   const apiSecret = env.CLOUDINARY_API_SECRET;
   const publicId = row.cloudinary_public_id;
 
-  // For authenticated videos the URL looks like:
-  // https://res.cloudinary.com/{cloud}/video/authenticated/{signature}/v{timestamp}/{public_id}
-  // Simpler approach used by many: use "private" type + sign with expires_at
+  // Include .mp4 so the browser gets a proper video Content-Type
+  const deliveryPath = `${publicId}.mp4`;
+  const signature = await cloudinaryDeliverySignature(deliveryPath, apiSecret);
 
-  const expiresAt = Math.floor(Date.now() / 1000) + 3600; // 1 hour
-  // Signature for authenticated delivery:
-  // sha1( public_id + expires_at + api_secret )  (simplified; real Cloudinary uses more params)
-  // Better: use the official "generate archive / delivery" style or the transformation sign.
-
-  // Recommended pattern for private/authenticated:
-  // 1. Upload resource type video, type authenticated
-  // 2. Delivery URL with signature
-
-  const toSign = `public_id=${publicId}&timestamp=${expiresAt}${apiSecret}`;
-  const signature = await sha1(toSign);
-
-  // Authenticated delivery URL
-  const url = `https://res.cloudinary.com/${cloudName}/video/authenticated/s--${signature}--/v${expiresAt}/${publicId}`;
-
-  // Note: the exact signature format for authenticated resources is:
-  // For simplicity and reliability on free tier we also support a fallback
-  // that uses the "private" delivery + auth_token style if you prefer later.
+  const url = `https://res.cloudinary.com/${cloudName}/video/authenticated/s--${signature}--/${deliveryPath}`;
 
   return json({
     url,
-    expiresAt,
     title: row.title_pt,
   });
 }
 
+/** Hex SHA-1 (used for upload API signatures). */
 async function sha1(message) {
   const data = new TextEncoder().encode(message);
   const hash = await crypto.subtle.digest('SHA-1', data);
-  return [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, '0')).join('');
+  return [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Cloudinary delivery URL signature (authenticated / signed delivery).
+ * First 8 characters of URL-safe base64(SHA-1(toSign + apiSecret)).
+ * toSign is the slash-joined path that appears after /s--SIG--/ in the URL.
+ */
+async function cloudinaryDeliverySignature(toSign, apiSecret) {
+  const data = new TextEncoder().encode(toSign + apiSecret);
+  const hash = await crypto.subtle.digest('SHA-1', data);
+  // URL-safe base64 without padding
+  const bytes = new Uint8Array(hash);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  const b64 = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return b64.slice(0, 8);
 }
 
 // ==================== Admin handlers ====================
