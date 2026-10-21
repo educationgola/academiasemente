@@ -715,7 +715,10 @@
       body: JSON.stringify({ slug: slug + '-' + Date.now().toString(36) }),
     });
 
-    if (uploadStatus) uploadStatus.textContent = 'A enviar vídeo para o Cloudinary… (pode demorar)';
+    if (uploadStatus) {
+      const mb = (file.size / (1024 * 1024)).toFixed(1);
+      uploadStatus.textContent = `A enviar vídeo (${mb} MB) para o Cloudinary… (pode demorar)`;
+    }
 
     const form = new FormData();
     form.append('file', file);
@@ -725,17 +728,35 @@
     form.append('public_id', sign.public_id);
     form.append('type', sign.type);
 
-    const res = await fetch(sign.upload_url, { method: 'POST', body: form });
+    let res;
+    try {
+      res = await fetch(sign.upload_url, { method: 'POST', body: form });
+    } catch (netErr) {
+      throw new Error(
+        'Falha de rede ao contactar o Cloudinary (Failed to fetch). ' +
+          'Verifique a ligação, tente um ficheiro mais pequeno, ou faça upload no painel Cloudinary e cole o public_id.'
+      );
+    }
     const result = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const msg = (result && (result.error && result.error.message)) || result.message || 'Upload Cloudinary falhou';
+      const msg =
+        (result && result.error && result.error.message) ||
+        result.message ||
+        'Upload Cloudinary falhou (HTTP ' + res.status + ')';
       throw new Error(msg);
     }
+    const publicId = result.public_id || sign.public_id;
+    // Cloudinary returns duration in seconds (float) for video resources
+    let duration = null;
+    if (typeof result.duration === 'number' && result.duration > 0) {
+      duration = Math.round(result.duration);
+    }
     if (uploadStatus) {
-      uploadStatus.textContent = 'Upload concluído: ' + (result.public_id || sign.public_id);
+      uploadStatus.textContent =
+        'Upload concluído: ' + publicId + (duration ? ' · ' + duration + 's' : '');
       uploadStatus.className = 'hint success-hint';
     }
-    return result.public_id || sign.public_id;
+    return { public_id: publicId, duration_seconds: duration };
   }
 
   videoForm.addEventListener('submit', async (e) => {
@@ -744,6 +765,7 @@
     const course_id = fd.get('course_id');
     const title_pt = fd.get('title_pt');
     let publicId = (fd.get('cloudinary_public_id') || '').trim();
+    let durationSeconds = fd.get('duration_seconds') ? Number(fd.get('duration_seconds')) : null;
     const file = videoFileInput.files && videoFileInput.files[0];
 
     if (!course_id) {
@@ -754,8 +776,15 @@
     videoSubmitBtn.disabled = true;
     try {
       if (file) {
-        publicId = await uploadVideoToCloudinary(file);
+        const uploaded = await uploadVideoToCloudinary(file);
+        publicId = uploaded.public_id;
         videoPublicId.value = publicId;
+        if (uploaded.duration_seconds) {
+          durationSeconds = uploaded.duration_seconds;
+          if (videoForm.elements.duration_seconds) {
+            videoForm.elements.duration_seconds.value = String(durationSeconds);
+          }
+        }
       }
       if (!publicId) {
         alert('Faça upload de um ficheiro ou indique o Cloudinary public_id.');
@@ -765,7 +794,7 @@
         course_id,
         title_pt,
         cloudinary_public_id: publicId,
-        duration_seconds: fd.get('duration_seconds') ? Number(fd.get('duration_seconds')) : null,
+        duration_seconds: durationSeconds || null,
       };
       const id = fd.get('id');
       if (id) payload.id = id;

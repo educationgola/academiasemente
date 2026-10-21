@@ -114,7 +114,10 @@
             <label>Cloudinary public_id
               <input name="cloudinary_public_id" id="videoPublicId" placeholder="Preenchido após upload, ou cole manualmente">
             </label>
-            <label>Duração (segundos) <input name="duration_seconds" type="number" inputmode="numeric" placeholder="ex. 600"></label>
+            <label>Duração (segundos, opcional — auto no upload)
+              <input name="duration_seconds" type="number" inputmode="numeric" placeholder="Auto após upload">
+            </label>
+
             <p class="hint" id="uploadStatus" hidden></p>
             <div class="form-actions">
               <button type="submit" class="btn" id="videoSubmitBtn">Guardar vídeo</button>
