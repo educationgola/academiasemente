@@ -273,35 +273,34 @@
       const data = await api('/admin/courses');
       coursesCache = data.courses || [];
       fillCourseSelect();
-      if (!coursesCache.length) {
+      const activeCourses = coursesCache.filter((c) => c.active !== 0);
+      const deletedCourses = coursesCache.filter((c) => c.active === 0);
+
+      if (!activeCourses.length && !deletedCourses.length) {
         coursesAdmin.innerHTML = '<div class="empty-state">Nenhum curso criado. Use o formulário abaixo.</div>';
         return;
       }
-      coursesAdmin.innerHTML = coursesCache
-        .map((c) => {
-          const inactive = c.active === 0;
-          const videos = (c.videos || []).filter((v) => v.active !== 0);
-          const inactiveVideos = (c.videos || []).filter((v) => v.active === 0);
-          return `
-          <div class="course-block${inactive ? ' is-inactive' : ''}">
+
+      let html = '';
+
+      if (activeCourses.length) {
+        html += activeCourses
+          .map((c) => {
+            const videos = (c.videos || []).filter((v) => v.active !== 0);
+            const deletedVideos = (c.videos || []).filter((v) => v.active === 0);
+            return `
+          <div class="course-block">
             <div class="course-block-head">
               <div>
                 <h4>
                   ${esc(c.title_pt)}
-                  ${inactive ? '<span class="badge suspended">inactivo</span>' : ''}
                   <span class="course-id">${esc(c.id)}</span>
                 </h4>
                 ${c.description_pt ? `<p class="muted">${esc(c.description_pt)}</p>` : ''}
               </div>
               <div class="course-actions">
-                ${
-                  !inactive
-                    ? `
-                  <button type="button" class="btn btn-sm btn-outline" data-edit-course="${c.id}">Editar</button>
-                  <button type="button" class="btn btn-sm btn-danger" data-del-course="${c.id}">Eliminar</button>
-                `
-                    : '<span class="muted">Soft-deleted</span>'
-                }
+                <button type="button" class="btn btn-sm btn-outline" data-edit-course="${c.id}">Editar</button>
+                <button type="button" class="btn btn-sm btn-danger" data-del-course="${c.id}">Eliminar</button>
               </div>
             </div>
             ${
@@ -321,28 +320,87 @@
               </div>`
                     )
                     .join('')
-                : '<p class="muted" style="margin:0.5rem 0 0">Sem vídeos activos</p>'
+                : '<p class="muted" style="margin:0.5rem 0 0">Sem vídeos</p>'
             }
             ${
-              inactiveVideos.length
-                ? `<p class="muted" style="margin:0.4rem 0 0;font-size:0.8rem">${inactiveVideos.length} vídeo(s) eliminado(s)</p>`
+              deletedVideos.length
+                ? `<div class="deleted-videos">
+                    <p class="muted" style="margin:0.6rem 0 0.35rem;font-size:0.8rem">Vídeos eliminados</p>
+                    ${deletedVideos
+                      .map(
+                        (v) => `
+                    <div class="video-row is-inactive">
+                      <div class="video-row-info">
+                        <span>${esc(v.title_pt)}</span>
+                        <code>${esc(v.cloudinary_public_id)}</code>
+                      </div>
+                      <div class="video-row-actions">
+                        <button type="button" class="btn btn-sm btn-outline" data-restore-video="${v.id}">Restaurar</button>
+                        <button type="button" class="btn btn-sm btn-danger" data-purge-video="${v.id}">Apagar p/sempre</button>
+                      </div>
+                    </div>`
+                      )
+                      .join('')}
+                  </div>`
                 : ''
             }
           </div>`;
-        })
-        .join('');
+          })
+          .join('');
+      } else {
+        html += '<div class="empty-state">Nenhum curso activo. Use o formulário abaixo ou restaure um eliminado.</div>';
+      }
+
+      if (deletedCourses.length) {
+        html += '<h3 class="deleted-section-title">Cursos eliminados</h3>';
+        html += deletedCourses
+          .map(
+            (c) => `
+          <div class="course-block is-inactive">
+            <div class="course-block-head">
+              <div>
+                <h4>
+                  ${esc(c.title_pt)}
+                  <span class="badge suspended">inactivo</span>
+                  <span class="course-id">${esc(c.id)}</span>
+                </h4>
+                ${c.description_pt ? `<p class="muted">${esc(c.description_pt)}</p>` : ''}
+              </div>
+              <div class="course-actions">
+                <button type="button" class="btn btn-sm btn-outline" data-restore-course="${c.id}">Restaurar</button>
+                <button type="button" class="btn btn-sm btn-danger" data-purge-course="${c.id}">Apagar p/sempre</button>
+              </div>
+            </div>
+          </div>`
+          )
+          .join('');
+      }
+
+      coursesAdmin.innerHTML = html;
 
       coursesAdmin.querySelectorAll('[data-edit-course]').forEach((btn) => {
         btn.addEventListener('click', () => startEditCourse(btn.dataset.editCourse));
       });
       coursesAdmin.querySelectorAll('[data-del-course]').forEach((btn) => {
-        btn.addEventListener('click', () => deleteCourse(btn.dataset.delCourse));
+        btn.addEventListener('click', () => deleteCourse(btn.dataset.delCourse, false));
+      });
+      coursesAdmin.querySelectorAll('[data-restore-course]').forEach((btn) => {
+        btn.addEventListener('click', () => restoreCourse(btn.dataset.restoreCourse));
+      });
+      coursesAdmin.querySelectorAll('[data-purge-course]').forEach((btn) => {
+        btn.addEventListener('click', () => deleteCourse(btn.dataset.purgeCourse, true));
       });
       coursesAdmin.querySelectorAll('[data-edit-video]').forEach((btn) => {
         btn.addEventListener('click', () => startEditVideo(btn.dataset.editVideo, btn.dataset.course));
       });
       coursesAdmin.querySelectorAll('[data-del-video]').forEach((btn) => {
-        btn.addEventListener('click', () => deleteVideo(btn.dataset.delVideo));
+        btn.addEventListener('click', () => deleteVideo(btn.dataset.delVideo, false));
+      });
+      coursesAdmin.querySelectorAll('[data-restore-video]').forEach((btn) => {
+        btn.addEventListener('click', () => restoreVideo(btn.dataset.restoreVideo));
+      });
+      coursesAdmin.querySelectorAll('[data-purge-video]').forEach((btn) => {
+        btn.addEventListener('click', () => deleteVideo(btn.dataset.purgeVideo, true));
       });
     } catch (err) {
       coursesAdmin.innerHTML = `<p class="error">${esc(err.message)}</p>`;
@@ -403,12 +461,29 @@
     }
   });
 
-  async function deleteCourse(id) {
-    if (!confirm('Eliminar este curso? Os alunos deixam de o ver (soft-delete).')) return;
+  async function deleteCourse(id, permanent) {
+    if (permanent) {
+      if (!confirm('Apagar este curso PARA SEMPRE? Remove o curso, vídeos e atribuições da base de dados. Não se pode desfazer.')) return;
+    } else {
+      if (!confirm('Eliminar este curso? Os alunos deixam de o ver. Pode restaurar depois.')) return;
+    }
     try {
-      await api('/admin/courses/delete', { method: 'POST', body: JSON.stringify({ id }) });
+      await api('/admin/courses/delete', {
+        method: 'POST',
+        body: JSON.stringify({ id, permanent: !!permanent }),
+      });
       loadCourses();
-      alert('Curso eliminado.');
+      alert(permanent ? 'Curso apagado permanentemente.' : 'Curso eliminado (pode restaurar).');
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function restoreCourse(id) {
+    try {
+      await api('/admin/courses/restore', { method: 'POST', body: JSON.stringify({ id }) });
+      loadCourses();
+      alert('Curso restaurado.');
     } catch (err) {
       alert(err.message);
     }
@@ -539,12 +614,29 @@
     }
   });
 
-  async function deleteVideo(id) {
-    if (!confirm('Eliminar este vídeo? (soft-delete — deixa de aparecer aos alunos)')) return;
+  async function deleteVideo(id, permanent) {
+    if (permanent) {
+      if (!confirm('Apagar este vídeo PARA SEMPRE da base de dados? Não se pode desfazer.')) return;
+    } else {
+      if (!confirm('Eliminar este vídeo? Deixa de aparecer aos alunos. Pode restaurar depois.')) return;
+    }
     try {
-      await api('/admin/videos/delete', { method: 'POST', body: JSON.stringify({ id }) });
+      await api('/admin/videos/delete', {
+        method: 'POST',
+        body: JSON.stringify({ id, permanent: !!permanent }),
+      });
       loadCourses();
-      alert('Vídeo eliminado.');
+      alert(permanent ? 'Vídeo apagado permanentemente.' : 'Vídeo eliminado (pode restaurar).');
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function restoreVideo(id) {
+    try {
+      await api('/admin/videos/restore', { method: 'POST', body: JSON.stringify({ id }) });
+      loadCourses();
+      alert('Vídeo restaurado.');
     } catch (err) {
       alert(err.message);
     }

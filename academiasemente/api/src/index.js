@@ -48,8 +48,10 @@ export default {
       if (path === '/api/admin/courses' && request.method === 'GET') return handleListCourses(request, env);
       if (path === '/api/admin/courses' && request.method === 'POST') return handleUpsertCourse(request, env);
       if (path === '/api/admin/courses/delete' && request.method === 'POST') return handleDeleteCourse(request, env);
+      if (path === '/api/admin/courses/restore' && request.method === 'POST') return handleRestoreCourse(request, env);
       if (path === '/api/admin/videos' && request.method === 'POST') return handleUpsertVideo(request, env);
       if (path === '/api/admin/videos/delete' && request.method === 'POST') return handleDeleteVideo(request, env);
+      if (path === '/api/admin/videos/restore' && request.method === 'POST') return handleRestoreVideo(request, env);
       if (path === '/api/admin/cloudinary/sign' && request.method === 'POST') return handleCloudinarySign(request, env);
 
       return json({ error: 'Not found' }, 404);
@@ -622,24 +624,68 @@ async function handleUpsertVideo(request, env) {
   return json({ ok: true, id });
 }
 
-/** Soft-delete course (active = 0). Videos stay linked but course is hidden from students. */
+/**
+ * Delete course.
+ * body.permanent === true → hard delete (course + videos + grants)
+ * otherwise soft-delete (active = 0)
+ */
 async function handleDeleteCourse(request, env) {
   await requireAdmin(request, env);
   const body = await readBody(request);
   if (!body.id) return json({ error: 'id required' }, 400);
+
+  if (body.permanent) {
+    await env.DB.prepare('DELETE FROM user_courses WHERE course_id = ?').bind(body.id).run();
+    await env.DB.prepare('DELETE FROM videos WHERE course_id = ?').bind(body.id).run();
+    await env.DB.prepare('DELETE FROM courses WHERE id = ?').bind(body.id).run();
+    return json({ ok: true, permanent: true });
+  }
+
   await env.DB.prepare(`
     UPDATE courses SET active = 0, updated_at = datetime('now') WHERE id = ?
   `).bind(body.id).run();
-  return json({ ok: true });
+  return json({ ok: true, permanent: false });
 }
 
-/** Soft-delete video (active = 0). */
-async function handleDeleteVideo(request, env) {
+/** Restore soft-deleted course (active = 1). */
+async function handleRestoreCourse(request, env) {
   await requireAdmin(request, env);
   const body = await readBody(request);
   if (!body.id) return json({ error: 'id required' }, 400);
   await env.DB.prepare(`
+    UPDATE courses SET active = 1, updated_at = datetime('now') WHERE id = ?
+  `).bind(body.id).run();
+  return json({ ok: true });
+}
+
+/**
+ * Delete video.
+ * body.permanent === true → hard delete row
+ * otherwise soft-delete (active = 0)
+ */
+async function handleDeleteVideo(request, env) {
+  await requireAdmin(request, env);
+  const body = await readBody(request);
+  if (!body.id) return json({ error: 'id required' }, 400);
+
+  if (body.permanent) {
+    await env.DB.prepare('DELETE FROM videos WHERE id = ?').bind(body.id).run();
+    return json({ ok: true, permanent: true });
+  }
+
+  await env.DB.prepare(`
     UPDATE videos SET active = 0, updated_at = datetime('now') WHERE id = ?
+  `).bind(body.id).run();
+  return json({ ok: true, permanent: false });
+}
+
+/** Restore soft-deleted video (active = 1). */
+async function handleRestoreVideo(request, env) {
+  await requireAdmin(request, env);
+  const body = await readBody(request);
+  if (!body.id) return json({ error: 'id required' }, 400);
+  await env.DB.prepare(`
+    UPDATE videos SET active = 1, updated_at = datetime('now') WHERE id = ?
   `).bind(body.id).run();
   return json({ ok: true });
 }
