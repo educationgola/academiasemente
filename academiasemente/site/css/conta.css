@@ -102,6 +102,11 @@
   padding-top: 0.5rem;
 }
 
+/* Ensure [hidden] wins over display:flex / other layout rules */
+.conta-page [hidden] {
+  display: none !important;
+}
+
 .auth-card {
   width: 100%;
   max-width: 400px;
