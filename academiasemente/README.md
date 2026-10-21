@@ -26,7 +26,7 @@ Health check: https://academiasemente.educationgola.workers.dev/api/health
 - Physical products shop with shopping cart + checkout
 - Contact form and enrolment form → WhatsApp
 - Student area (`conta.html`): Google + email/password login, private videos
-- Admin panel (`admin.html`): students, courses, grant access
+- Admin panel (`admin.html`): students (search, status, edit, delete, grant/revoke), courses & videos (upload, soft-delete, restore, permanent delete)
 
 ## Contact
 - WhatsApp: +244 945 574 700
@@ -110,13 +110,35 @@ python3 -m http.server 8080
 - Page: `site/conta.html` (nav label: **Entrar**)
 - Auth: Google Identity Services (ID token) + email/password
 - Backend: Worker `/api/auth/*` + D1 `users` table
-- New accounts are **pending** until staff grants a course in `admin.html`
+- New accounts are **pending** until staff grants a course (or sets status) in `admin.html`
 - Google Console → Authorized JavaScript origins must include `https://academiasemente.pages.dev` (redirect URIs not needed)
+- Login and dashboard views must not show at the same time (`[hidden]` CSS fix in `conta.css`)
 
 Secrets (Worker only, never in git): `JWT_SECRET`, `ADMIN_PASSWORD`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`.  
 See `api/README.md` for full setup.
 
+## Admin panel
+
+- Page: `site/admin.html`
+- **Alunos:** search, filter by status, change status, edit name/phone, grant/revoke courses, delete student, bulk delete probe/test accounts
+- **Cursos & Vídeos:** create/edit courses; video upload via signed Cloudinary params (browser → Cloudinary) or paste `public_id`; duration auto-filled after upload; soft-delete, restore, permanent delete
+- Prefer compressed **720p MP4** for uploads; large files may fail in the browser — upload in Cloudinary console and paste `public_id` instead
+
 ## Changelog
+
+### 2026-10-21 — Full admin panel + student tools
+**What changed**
+- Admin students: search, status filter, inline status change, edit modal (name/phone/status + course history), grant/revoke, permanent delete, “Limpar probes”
+- Admin courses/videos: edit, soft-delete, restore, permanent delete; Cloudinary signed video upload; duration from Cloudinary response
+- Student `conta.css`: `[hidden]` wins over `display:flex` so login form hides when logged in
+- Mobile admin: student action buttons in a grid so Editar/Eliminar remain visible
+- API: `students/update`, `students/delete`, `courses/delete` (+ permanent), `courses/restore`, `videos/delete` (+ permanent), `videos/restore`, `cloudinary/sign`
+
+**Files changed:**
+- `api/src/index.js`, `api/README.md`
+- `site/admin.html`, `site/js/admin.js`, `site/css/admin.css`
+- `site/css/conta.css`
+- `README.md`
 
 ### 2026-10-16 — Student auth live + UI polish
 **What changed**
@@ -448,11 +470,16 @@ See `api/README.md` for full steps:
 
 ### Student flow
 1. User creates account on `/conta.html` (Google or email/password) → status `pending`
-2. Staff logs into `/admin.html` → creates Course + Videos (Cloudinary public_id)
-3. Staff grants course to student → status becomes `active`
+2. Staff logs into `/admin.html` → creates Course + Videos (upload file or Cloudinary `public_id`)
+3. Staff grants course to student → status becomes `active` (or set status manually)
 4. Student sees courses/videos; Worker returns short-lived signed Cloudinary URL
 
+### Admin flow (courses / videos)
+1. Create a course
+2. Add a video: choose course → upload compressed MP4 **or** paste authenticated `public_id`
+3. Duration is optional and auto-filled after a successful Cloudinary upload
+4. Eliminar = soft-delete; Restaurar brings it back; Apagar p/sempre removes from D1
+
 ### Next iterations (planned)
-- Full admin media library + site image slots + publish catalog (blueprint style)
-- Link “Área do aluno” in public header/nav
+- Full admin media library + site image slots + publish catalog from the panel
 - Custom domain `academiasemente.com` (when purchased)
