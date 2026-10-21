@@ -46,7 +46,7 @@
 
     <nav class="admin-nav">
       <button type="button" class="nav-btn active" data-panel="students">Alunos</button>
-      <button type="button" class="nav-btn" data-panel="courses">Cursos & Vídeos</button>
+      <button type="button" class="nav-btn" data-panel="courses">Cursos &amp; Vídeos</button>
       <button type="button" class="nav-btn" data-panel="guide">Guia</button>
     </nav>
 
@@ -65,7 +65,7 @@
       <!-- Courses -->
       <section id="panel-courses" class="panel" hidden>
         <div class="panel-head">
-          <h2>Cursos & Vídeos</h2>
+          <h2>Cursos &amp; Vídeos</h2>
           <button type="button" class="btn btn-outline" id="refreshCourses">Actualizar</button>
         </div>
         <div id="coursesAdmin" class="courses-admin">
@@ -73,26 +73,44 @@
         </div>
 
         <div class="form-section">
-          <h3>Novo curso</h3>
+          <h3 id="courseFormTitle">Novo curso</h3>
           <form id="courseForm" class="form-grid">
+            <input type="hidden" name="id" id="courseIdField" value="">
             <label>Título (PT) <input name="title_pt" required placeholder="Ex.: Inglês A1"></label>
             <label>Título (EN) <input name="title_en" placeholder="Optional"></label>
             <label>Descrição (PT) <textarea name="description_pt" rows="2" placeholder="Breve descrição do curso"></textarea></label>
             <label>Cover URL <input name="cover_url" placeholder="https://…" inputmode="url"></label>
-            <button type="submit" class="btn">Guardar curso</button>
+            <div class="form-actions">
+              <button type="submit" class="btn" id="courseSubmitBtn">Guardar curso</button>
+              <button type="button" class="btn btn-outline" id="courseCancelEdit" hidden>Cancelar edição</button>
+            </div>
           </form>
         </div>
 
         <div class="form-section">
-          <h3>Novo / editar vídeo</h3>
+          <h3 id="videoFormTitle">Novo vídeo</h3>
           <form id="videoForm" class="form-grid">
-            <label>Course ID <input name="course_id" required placeholder="id do curso"></label>
+            <input type="hidden" name="id" id="videoIdField" value="">
+            <label>Curso
+              <select name="course_id" id="videoCourseSelect" required>
+                <option value="">— escolha um curso —</option>
+              </select>
+            </label>
             <label>Título (PT) <input name="title_pt" required placeholder="Ex.: Aula 01 — Introdução"></label>
-            <label>Cloudinary public_id <input name="cloudinary_public_id" required placeholder="academiasemente/private/aula-01"></label>
+            <label>Ficheiro de vídeo (upload Cloudinary)
+              <input type="file" name="video_file" id="videoFileInput" accept="video/*">
+            </label>
+            <label>Cloudinary public_id
+              <input name="cloudinary_public_id" id="videoPublicId" placeholder="Preenchido após upload, ou cole manualmente">
+            </label>
             <label>Duração (segundos) <input name="duration_seconds" type="number" inputmode="numeric" placeholder="ex. 600"></label>
-            <button type="submit" class="btn">Guardar vídeo</button>
+            <p class="hint" id="uploadStatus" hidden></p>
+            <div class="form-actions">
+              <button type="submit" class="btn" id="videoSubmitBtn">Guardar vídeo</button>
+              <button type="button" class="btn btn-outline" id="videoCancelEdit" hidden>Cancelar edição</button>
+            </div>
           </form>
-          <p class="hint">Faça upload do vídeo no Cloudinary (tipo <strong>authenticated</strong> ou private) e cole o public_id aqui.</p>
+          <p class="hint">Pode fazer <strong>upload directo</strong> do ficheiro (tipo authenticated no Cloudinary) ou colar um public_id já existente.</p>
         </div>
       </section>
 
@@ -101,10 +119,11 @@
         <h2>Guia rápido</h2>
         <ol class="guide-list">
           <li><strong>Alunos</strong> — criam conta em /conta.html (Google ou email). Estado inicial: <em>pending</em>.</li>
-          <li>Crie um <strong>Curso</strong> e adicione <strong>Vídeos</strong> (public_id do Cloudinary).</li>
-          <li>Em Alunos, clique <strong>Atribuir curso</strong> e escolha o curso. O estado passa a <em>active</em>.</li>
-          <li>O aluno vê os vídeos no dashboard e o Worker gera links assinados temporários.</li>
-          <li>Publicar produtos/textos/imagens do site (loja) será adicionado na próxima iteração do painel (mesma lógica do blueprint).</li>
+          <li>Crie um <strong>Curso</strong> e adicione <strong>Vídeos</strong> (upload ou public_id do Cloudinary).</li>
+          <li>Em Alunos, clique <strong>Atribuir curso</strong>. O estado passa a <em>active</em>.</li>
+          <li>Use <strong>Revogar</strong> para retirar o acesso a um curso.</li>
+          <li><strong>Editar / Eliminar</strong> — soft-delete esconde o curso ou vídeo dos alunos (não apaga ficheiros no Cloudinary).</li>
+          <li>O aluno vê os vídeos no dashboard; o Worker gera links assinados temporários.</li>
         </ol>
         <p class="hint">Se algo falhar → contacte o programador. Não partilhe a palavra-passe de admin.</p>
       </section>
@@ -122,6 +141,21 @@
       <div class="modal-actions">
         <button type="button" class="btn-text" id="grantCancel">Cancelar</button>
         <button type="button" class="btn" id="grantConfirm">Atribuir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Revoke modal -->
+  <div id="revokeModal" class="modal" hidden>
+    <div class="modal-card">
+      <h3>Revogar curso</h3>
+      <p id="revokeStudentLabel"></p>
+      <label>Curso activo
+        <select id="revokeCourseSelect"></select>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn-text" id="revokeCancel">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="revokeConfirm">Revogar</button>
       </div>
     </div>
   </div>

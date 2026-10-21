@@ -290,6 +290,95 @@ body {
   font-size: 0.8rem;
 }
 
+.btn-danger {
+  background: #b33;
+  color: #fff;
+  border: none;
+}
+
+.btn-danger:hover { opacity: 0.9; }
+
+.btn-outline.btn-danger,
+.btn.btn-sm.btn-danger {
+  /* keep danger look on small buttons */
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.chip {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  background: #eef5ee;
+  color: #1a5c2e;
+  margin: 0.1rem 0.15rem 0.1rem 0;
+  white-space: nowrap;
+}
+
+.actions-cell {
+  white-space: nowrap;
+}
+
+.actions-cell .btn {
+  margin: 0.15rem 0.15rem 0.15rem 0;
+}
+
+.courses-cell {
+  max-width: 220px;
+}
+
+.course-block-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.course-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.course-block.is-inactive {
+  opacity: 0.65;
+  border-style: dashed;
+}
+
+.video-row {
+  flex-wrap: wrap;
+}
+
+.video-row-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.video-row-info code {
+  max-width: 100%;
+  text-align: left;
+}
+
+.video-row-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.success-hint { color: #155724 !important; }
+.error-hint { color: #b33 !important; }
+
 /* ========== TABLE / STUDENT LIST ========== */
 .table-wrap {
   overflow-x: auto;

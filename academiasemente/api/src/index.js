@@ -47,7 +47,10 @@ export default {
       if (path === '/api/admin/students/revoke' && request.method === 'POST') return handleRevokeCourse(request, env);
       if (path === '/api/admin/courses' && request.method === 'GET') return handleListCourses(request, env);
       if (path === '/api/admin/courses' && request.method === 'POST') return handleUpsertCourse(request, env);
+      if (path === '/api/admin/courses/delete' && request.method === 'POST') return handleDeleteCourse(request, env);
       if (path === '/api/admin/videos' && request.method === 'POST') return handleUpsertVideo(request, env);
+      if (path === '/api/admin/videos/delete' && request.method === 'POST') return handleDeleteVideo(request, env);
+      if (path === '/api/admin/cloudinary/sign' && request.method === 'POST') return handleCloudinarySign(request, env);
 
       return json({ error: 'Not found' }, 404);
     } catch (err) {
@@ -493,6 +496,19 @@ async function handleListStudents(request, env) {
     ORDER BY u.created_at DESC
     LIMIT 500
   `).all();
+
+  // Attach active course grants for revoke UI
+  for (const s of results) {
+    const { results: grants } = await env.DB.prepare(`
+      SELECT uc.course_id, c.title_pt, uc.granted_at, uc.status
+      FROM user_courses uc
+      JOIN courses c ON c.id = uc.course_id
+      WHERE uc.user_id = ? AND uc.status = 'active'
+      ORDER BY c.title_pt
+    `).bind(s.id).all();
+    s.courses = grants || [];
+  }
+
   return json({ students: results });
 }
 
@@ -604,4 +620,70 @@ async function handleUpsertVideo(request, env) {
     body.active !== undefined ? (body.active ? 1 : 0) : 1
   ).run();
   return json({ ok: true, id });
+}
+
+/** Soft-delete course (active = 0). Videos stay linked but course is hidden from students. */
+async function handleDeleteCourse(request, env) {
+  await requireAdmin(request, env);
+  const body = await readBody(request);
+  if (!body.id) return json({ error: 'id required' }, 400);
+  await env.DB.prepare(`
+    UPDATE courses SET active = 0, updated_at = datetime('now') WHERE id = ?
+  `).bind(body.id).run();
+  return json({ ok: true });
+}
+
+/** Soft-delete video (active = 0). */
+async function handleDeleteVideo(request, env) {
+  await requireAdmin(request, env);
+  const body = await readBody(request);
+  if (!body.id) return json({ error: 'id required' }, 400);
+  await env.DB.prepare(`
+    UPDATE videos SET active = 0, updated_at = datetime('now') WHERE id = ?
+  `).bind(body.id).run();
+  return json({ ok: true });
+}
+
+/**
+ * Signed params for direct browser upload of authenticated videos to Cloudinary.
+ * Client uploads the file to Cloudinary, then POSTs /api/admin/videos with the public_id.
+ */
+async function handleCloudinarySign(request, env) {
+  await requireAdmin(request, env);
+  if (!env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) {
+    return json({
+      error: 'Cloudinary secrets missing. Run: wrangler secret put CLOUDINARY_API_KEY && wrangler secret put CLOUDINARY_API_SECRET',
+    }, 500);
+  }
+
+  const body = await readBody(request);
+  const cloudName = env.CLOUDINARY_CLOUD_NAME || 'lfoop5b8';
+  const folder = env.CLOUDINARY_FOLDER || 'academiasemente';
+  const timestamp = Math.floor(Date.now() / 1000);
+  // public_id without extension; path under private folder
+  const slug = (body.slug || uuid().replace(/-/g, '').slice(0, 10)).replace(/[^a-zA-Z0-9_-]/g, '-');
+  const publicId = body.public_id || `${folder}/private/${slug}`;
+
+  // Params that go into the signature (alphabetical order required by Cloudinary)
+  const signParams = {
+    public_id: publicId,
+    timestamp: String(timestamp),
+    type: 'authenticated',
+  };
+  const toSign =
+    Object.keys(signParams)
+      .sort()
+      .map((k) => `${k}=${signParams[k]}`)
+      .join('&') + env.CLOUDINARY_API_SECRET;
+  const signature = await sha1(toSign);
+
+  return json({
+    cloud_name: cloudName,
+    api_key: env.CLOUDINARY_API_KEY,
+    timestamp,
+    public_id: publicId,
+    type: 'authenticated',
+    signature,
+    upload_url: `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
+  });
 }
