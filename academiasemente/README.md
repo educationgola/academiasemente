@@ -24,9 +24,11 @@ Health check: https://academiasemente.educationgola.workers.dev/api/health
 - Transparent → solid header on scroll
 - Services & pricing (Online / Presencial / Domiciliar) → enrolment page
 - Physical products shop with shopping cart + checkout
-- Contact form and enrolment form → WhatsApp
-- Student area (`conta.html`): Google + email/password login, private videos
-- Admin panel (`admin.html`): students (search, status, edit, delete, grant/revoke), courses & videos (upload, soft-delete, restore, permanent delete)
+- Contact form → WhatsApp
+- **Inscrição** form → saved to admin (**Inscrições**); monthly price + payment method (Referência Multicaixa / IBAN / Express)
+- **Checkout** orders → saved to admin (**Encomendas**); same payment methods
+- Student area (`conta.html`): Google + email/password, private videos, progress/resume, profile
+- Admin panel (`admin.html`): Alunos, Inscrições, Encomendas, Cursos & Vídeos, Guia
 
 ## Contact
 - WhatsApp: +244 945 574 700
@@ -83,12 +85,20 @@ educationgola/academiasemente/          ← GitHub repo root
 | API (files inside `api/`) | Push to GitHub → Worker Builds deploys automatically **or** run the command below |
 
 ### Deploy the API (Worker) manually
+Always run from the **`api/`** folder (where `wrangler.toml` and `schema.sql` live):
+
 ```bash
-cd academiasemente/api   # from the GitHub repo root
-# or, if you are already inside the project folder:
+# From GitHub repo root:
+cd academiasemente/api
+
+# Or if you are already in the project folder (academiasemente/):
 cd api
+
+npx wrangler d1 execute academiasemente-db --remote --file=./schema.sql   # after schema changes
 npx wrangler deploy
 ```
+
+Do **not** run `wrangler deploy` from the project root or `site/` — that triggers a static-site wizard, not the Worker.
 
 ### Local preview (website)
 ```bash
@@ -111,20 +121,46 @@ python3 -m http.server 8080
 - Auth: Google Identity Services (ID token) + email/password
 - Backend: Worker `/api/auth/*` + D1 `users` table
 - New accounts are **pending** until staff grants a course (or sets status) in `admin.html`
+- **Suspended** accounts cannot list courses or open videos (even with an existing session)
+- Dashboard: watch progress, resume, course %, expand/collapse, profile (name/phone/password)
 - Google Console → Authorized JavaScript origins must include `https://academiasemente.pages.dev` (redirect URIs not needed)
 - Login and dashboard views must not show at the same time (`[hidden]` CSS fix in `conta.css`)
 
 Secrets (Worker only, never in git): `JWT_SECRET`, `ADMIN_PASSWORD`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`.  
 See `api/README.md` for full setup.
 
+## Enrolment & product orders
+
+| Public page | Saves to | Admin tab |
+|-------------|----------|-----------|
+| `inscricao.html` | `POST /api/enroll` → D1 `enrollments` | **Inscrições** |
+| `checkout.html` | `POST /api/orders` → D1 `orders` | **Encomendas** |
+
+- Both collect preferred payment: `referencia` | `iban` | `express`
+- Course monthly prices (form): Online **10.525 Kz**, Presencial **15.225 Kz**, Domiciliar **100.000 Kz**, Teste de nível **0**
+- Staff actions: **Concluir** (mark handled), **WhatsApp** (if phone present), **Apagar**
+- Contact form on the home page still opens WhatsApp only
+
 ## Admin panel
 
 - Page: `site/admin.html`
 - **Alunos:** search, filter by status, change status, edit name/phone, grant/revoke courses, delete student, bulk delete probe/test accounts
-- **Cursos & Vídeos:** create/edit courses; video upload via signed Cloudinary params (browser → Cloudinary) or paste `public_id`; duration auto-filled after upload; soft-delete, restore, permanent delete
-- Prefer compressed **720p MP4** for uploads; large files may fail in the browser — upload in Cloudinary console and paste `public_id` instead
+- **Inscrições:** pending/done enrolment requests from the public form
+- **Encomendas:** pending/done product orders from checkout
+- **Cursos & Vídeos:** create/edit courses; **cover image upload** (public Cloudinary) or Cover URL; video upload via signed Cloudinary params or paste `public_id`; soft-delete, restore, permanent delete
+- Prefer compressed **720p MP4** for video uploads; large files may fail in the browser — upload in Cloudinary console and paste `public_id` instead
 
 ## Changelog
+
+### 2026-10-22 — Inscrições, Encomendas, covers, suspension
+**What changed**
+- Public enrolment → D1 + admin **Inscrições** (price + payment method; no WhatsApp on submit)
+- Product checkout → D1 + admin **Encomendas** (payment method; success view replaces form)
+- Course cover image upload in admin (Cloudinary public `image` sign)
+- Suspended students blocked from courses/videos mid-session
+- Deploy docs: always run Wrangler from `api/`
+
+**Files:** `api/schema.sql`, `api/src/index.js`, `api/README.md`, `site/inscricao.html`, `site/checkout.html`, `site/js/main.js`, `site/admin.html`, `site/js/admin.js`, `site/css/*`, `README.md`
 
 ### 2026-10-22 — Student dashboard improvements
 **What changed**

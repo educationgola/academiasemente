@@ -2,10 +2,10 @@
 
 API for:
 - Student auth (email/password + Google Identity Services ID token)
-- Admin password login + publish catalog to Cloudinary
-- Student management (status, edit, delete, grant/revoke)
-- Courses & videos (CRUD, soft-delete, restore, permanent delete)
-- Signed Cloudinary upload params + signed private video delivery URLs
+- Student courses, signed private video URLs, watch progress, profile
+- Public enrolment (`/api/enroll`) and product orders (`/api/orders`)
+- Admin: students, courses/videos, enrolments, orders, Cloudinary sign
+- Signed Cloudinary upload params (authenticated videos + public cover images)
 
 **Live URL:** https://academiasemente.educationgola.workers.dev  
 Health: https://academiasemente.educationgola.workers.dev/api/health
@@ -26,22 +26,15 @@ npx wrangler d1 execute academiasemente-db --remote --file=./schema.sql
 ```
 
 **Existing production DB:** re-running the full `schema.sql` is safe (`IF NOT EXISTS`).  
-To add only watch progress on an already-migrated DB:
+Always run from this `api/` directory so `./schema.sql` resolves:
 
 ```bash
-npx wrangler d1 execute academiasemente-db --remote --command="
-CREATE TABLE IF NOT EXISTS watch_progress (
-  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  video_id TEXT NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
-  position_seconds REAL NOT NULL DEFAULT 0,
-  completed INTEGER NOT NULL DEFAULT 0,
-  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-  PRIMARY KEY (user_id, video_id)
-);
-CREATE INDEX IF NOT EXISTS idx_watch_progress_user ON watch_progress(user_id);
-CREATE INDEX IF NOT EXISTS idx_watch_progress_video ON watch_progress(video_id);
-"
+cd path/to/academiasemente/api
+npx wrangler d1 execute academiasemente-db --remote --file=./schema.sql
+npx wrangler deploy
 ```
+
+Tables added over time: `watch_progress`, `enrollments`, `orders`.
 
 ### 3. Set secrets (never commit these)
 ```bash
@@ -83,7 +76,9 @@ In [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services
 - Cloud name: `lfoop5b8` (public, in `wrangler.toml` and `config.js`)
 - Unsigned upload preset for public media (overwrite = off)
 - Private videos: upload as `type=authenticated` (or private)
-- Admin panel can **sign** authenticated uploads (`POST /api/admin/cloudinary/sign`); the browser uploads the file **directly** to Cloudinary (not through the Worker)
+- Admin panel can **sign** uploads (`POST /api/admin/cloudinary/sign`); the browser uploads **directly** to Cloudinary (not through the Worker)
+  - Videos: `resource_type: video`, `type: authenticated` → `academiasemente/private/…`
+  - Course covers: `resource_type: image` (public) → `academiasemente/covers/…`
 - Catalog public_id: `academiasemente/catalog` (raw JSON)
 
 **Video size tip:** prefer compressed 720p MP4 (~under 80–100 MB) for reliable browser upload. Larger files can be uploaded in the Cloudinary console, then paste the `public_id` in admin.
@@ -101,13 +96,15 @@ Set `WORKER_URL` in `site/js/config.js` to `http://127.0.0.1:8787` while testing
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | GET | /api/health | — | Liveness |
+| POST | /api/enroll | — | Public enrolment form → `enrollments` |
+| POST | /api/orders | — | Public product checkout → `orders` |
 | POST | /api/auth/register | — | Email/password sign-up |
 | POST | /api/auth/login | — | Email/password login |
 | POST | /api/auth/google | — | Google ID token → session |
 | GET | /api/auth/me | Student | Current user |
-| GET | /api/student/courses | Student | Granted courses + videos + progress + last_watched |
-| GET | /api/student/videos/:id/url | Student | Signed Cloudinary URL + resume position |
-| POST | /api/student/videos/:id/progress | Student | Save watch position / completed |
+| GET | /api/student/courses | Student (not suspended) | Granted courses + videos + progress + last_watched |
+| GET | /api/student/videos/:id/url | Student (not suspended) | Signed Cloudinary URL + resume position |
+| POST | /api/student/videos/:id/progress | Student (not suspended) | Save watch position / completed |
 | POST | /api/student/profile | Student | Update name + phone |
 | POST | /api/student/password | Student | Change or set password |
 
@@ -128,6 +125,17 @@ Set `WORKER_URL` in `site/js/config.js` to `http://127.0.0.1:8787` while testing
 | POST | /api/admin/students/update | Admin | Update `name`, `phone`, `status` (`pending` \| `active` \| `suspended`) |
 | POST | /api/admin/students/delete | Admin | Permanent delete user + grants + sessions |
 
+### Admin — enrolments & orders
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | /api/admin/enrollments | Admin | List enrolments (`?status=pending\|done`) |
+| POST | /api/admin/enrollments/done | Admin | Mark enrolment handled |
+| POST | /api/admin/enrollments/delete | Admin | Permanent delete enrolment |
+| GET | /api/admin/orders | Admin | List orders (`?status=pending\|done`) |
+| POST | /api/admin/orders/done | Admin | Mark order handled |
+| POST | /api/admin/orders/delete | Admin | Permanent delete order |
+
 ### Admin — courses & videos
 
 | Method | Path | Auth | Description |
@@ -139,18 +147,21 @@ Set `WORKER_URL` in `site/js/config.js` to `http://127.0.0.1:8787` while testing
 | POST | /api/admin/videos | Admin | Create/update video (needs `course_id` + `cloudinary_public_id`) |
 | POST | /api/admin/videos/delete | Admin | Soft-delete or hard-delete if `permanent: true` |
 | POST | /api/admin/videos/restore | Admin | Restore soft-deleted video |
-| POST | /api/admin/cloudinary/sign | Admin | Signed params for authenticated video upload from the browser |
+| POST | /api/admin/cloudinary/sign | Admin | Signed params for video (`authenticated`) or image cover (`resource_type: image`) |
 
 ## Admin panel (`site/admin.html`)
 
 - **Alunos:** search, status filter, change status, edit (name/phone/status + history), grant/revoke, delete, bulk “Limpar probes”
-- **Cursos & Vídeos:** create/edit courses; upload video file (signed → Cloudinary) or paste `public_id`; duration auto-filled from Cloudinary when possible; soft-delete, restore, permanent delete
+- **Inscrições:** enrolment requests; Concluir / WhatsApp / Apagar
+- **Encomendas:** product orders; Concluir / WhatsApp / Apagar
+- **Cursos & Vídeos:** create/edit courses; cover image upload or URL; video file upload or `public_id`; soft-delete, restore, permanent delete
 - Mobile: student action buttons stack in a grid so Editar/Eliminar stay visible
 
 ## Security notes
 - Cloudinary API secret and admin password live **only** as Worker secrets.
 - Student passwords are hashed with PBKDF2 (**12 000** iterations — kept low for Workers CPU limits).
 - New student accounts start as `pending` until staff activates / grants a course.
+- **Suspended** users are rejected on course list, video URL, and progress (not only at login).
 - Private video URLs expire (default 1 hour).
 - Browser “Failed to fetch” on **API** calls usually means the Worker crashed or is unreachable.
 - Browser “Failed to fetch” on **video upload** usually means the direct Cloudinary POST failed (network, file size, timeout) — compress the file or upload via Cloudinary console and paste `public_id`.
