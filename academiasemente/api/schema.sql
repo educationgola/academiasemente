@@ -87,3 +87,32 @@ CREATE TABLE IF NOT EXISTS watch_progress (
 
 CREATE INDEX IF NOT EXISTS idx_watch_progress_user ON watch_progress(user_id);
 CREATE INDEX IF NOT EXISTS idx_watch_progress_video ON watch_progress(video_id);
+
+-- Enrolment requests from inscricao.html (admin tab: Inscrições)
+CREATE TABLE IF NOT EXISTS enrollments (
+  id              TEXT PRIMARY KEY,
+  name            TEXT NOT NULL,
+  age             INTEGER,
+  marital         TEXT,
+  email           TEXT,
+  phone           TEXT,
+  address         TEXT,
+  province        TEXT,
+  municipality    TEXT,
+  course          TEXT NOT NULL,
+  level           TEXT,
+  schedule        TEXT,
+  motivation      TEXT,
+  difficulties    TEXT,
+  experience      TEXT,
+  topics          TEXT,
+  notes           TEXT,
+  amount_kz       INTEGER NOT NULL DEFAULT 0,
+  payment_method  TEXT,
+  status          TEXT NOT NULL DEFAULT 'pending',
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_enrollments_status ON enrollments(status);
+CREATE INDEX IF NOT EXISTS idx_enrollments_created ON enrollments(created_at);

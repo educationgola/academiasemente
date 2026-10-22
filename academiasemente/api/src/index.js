@@ -25,6 +25,7 @@ export default {
     try {
       // ---------- Public ----------
       if (path === '/api/health') return json({ ok: true, ts: new Date().toISOString() });
+      if (path === '/api/enroll' && request.method === 'POST') return handlePublicEnroll(request, env);
 
       // ---------- Auth ----------
       if (path === '/api/auth/register' && request.method === 'POST') return handleRegister(request, env);
@@ -61,6 +62,9 @@ export default {
       if (path === '/api/admin/videos/delete' && request.method === 'POST') return handleDeleteVideo(request, env);
       if (path === '/api/admin/videos/restore' && request.method === 'POST') return handleRestoreVideo(request, env);
       if (path === '/api/admin/cloudinary/sign' && request.method === 'POST') return handleCloudinarySign(request, env);
+      if (path === '/api/admin/enrollments' && request.method === 'GET') return handleListEnrollments(request, env);
+      if (path === '/api/admin/enrollments/done' && request.method === 'POST') return handleEnrollmentDone(request, env);
+      if (path === '/api/admin/enrollments/delete' && request.method === 'POST') return handleEnrollmentDelete(request, env);
 
       return json({ error: 'Not found' }, 404);
     } catch (err) {
@@ -1075,4 +1079,130 @@ async function handleCloudinarySign(request, env) {
     signature,
     upload_url: `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
   });
+}
+
+// ==================== Enrolments (Inscrições) ====================
+
+const COURSE_PRICES_KZ = {
+  Online: 10525,
+  Presencial: 15225,
+  Domiciliar: 100000,
+  'Teste de nível': 0,
+};
+
+const PAYMENT_METHODS = ['referencia', 'iban', 'express'];
+
+async function handlePublicEnroll(request, env) {
+  if (!env.DB) return json({ error: 'Database not configured' }, 500);
+  const body = await readBody(request);
+
+  const name = String(body.name || '').trim();
+  const email = String(body.email || '').trim().toLowerCase();
+  const phone = String(body.phone || '').trim();
+  const course = String(body.course || body.interest || '').trim();
+  const payment_method = String(body.payment_method || '').trim();
+
+  if (!name || name.length < 2) return json({ error: 'Nome é obrigatório.' }, 400);
+  if (!email || !email.includes('@')) return json({ error: 'E-mail inválido.' }, 400);
+  if (!phone) return json({ error: 'Telefone / WhatsApp é obrigatório.' }, 400);
+  if (!course || !(course in COURSE_PRICES_KZ)) {
+    return json({ error: 'Curso inválido.' }, 400);
+  }
+  if (!PAYMENT_METHODS.includes(payment_method)) {
+    return json({ error: 'Escolha um método de pagamento válido.' }, 400);
+  }
+
+  const amount_kz = COURSE_PRICES_KZ[course];
+  const id = uuid();
+  const age = body.age != null && body.age !== '' ? Number(body.age) : null;
+
+  try {
+    await env.DB.prepare(
+      `INSERT INTO enrollments (
+        id, name, age, marital, email, phone, address, province, municipality,
+        course, level, schedule, motivation, difficulties, experience, topics, notes,
+        amount_kz, payment_method, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`
+    )
+      .bind(
+        id,
+        name,
+        Number.isFinite(age) ? age : null,
+        String(body.marital || '').trim() || null,
+        email,
+        phone,
+        String(body.address || '').trim() || null,
+        String(body.province || '').trim() || null,
+        String(body.municipality || '').trim() || null,
+        course,
+        String(body.level || '').trim() || null,
+        String(body.schedule || '').trim() || null,
+        String(body.motivation || '').trim() || null,
+        String(body.difficulties || '').trim() || null,
+        String(body.experience || '').trim() || null,
+        String(body.topics || '').trim() || null,
+        String(body.notes || body.message || '').trim() || null,
+        amount_kz,
+        payment_method
+      )
+      .run();
+  } catch (err) {
+    if (String(err.message || '').includes('no such table')) {
+      return json({ error: 'Tabela enrollments em falta. Execute schema.sql no D1.' }, 500);
+    }
+    throw err;
+  }
+
+  return json({
+    ok: true,
+    id,
+    amount_kz,
+    payment_method,
+    course,
+  });
+}
+
+async function handleListEnrollments(request, env) {
+  await requireAdmin(request, env);
+  const url = new URL(request.url);
+  const status = (url.searchParams.get('status') || '').trim();
+
+  let sql = `SELECT * FROM enrollments`;
+  const binds = [];
+  if (status === 'pending' || status === 'done') {
+    sql += ` WHERE status = ?`;
+    binds.push(status);
+  }
+  sql += ` ORDER BY created_at DESC LIMIT 200`;
+
+  try {
+    const stmt = env.DB.prepare(sql);
+    const { results } = binds.length ? await stmt.bind(...binds).all() : await stmt.all();
+    return json({ enrollments: results || [] });
+  } catch (err) {
+    if (String(err.message || '').includes('no such table')) {
+      return json({ enrollments: [], error: 'Tabela enrollments em falta. Execute schema.sql.' });
+    }
+    throw err;
+  }
+}
+
+async function handleEnrollmentDone(request, env) {
+  await requireAdmin(request, env);
+  const body = await readBody(request);
+  if (!body.id) return json({ error: 'id obrigatório' }, 400);
+  await env.DB.prepare(
+    `UPDATE enrollments SET status = 'done', updated_at = datetime('now') WHERE id = ?`
+  )
+    .bind(body.id)
+    .run();
+  return json({ ok: true });
+}
+
+async function handleEnrollmentDelete(request, env) {
+  await requireAdmin(request, env);
+  const body = await readBody(request);
+  if (!body.id) return json({ error: 'id obrigatório' }, 400);
+  await env.DB.prepare(`DELETE FROM enrollments WHERE id = ?`).bind(body.id).run();
+  return json({ ok: true });
 }

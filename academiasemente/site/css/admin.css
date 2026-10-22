@@ -876,3 +876,83 @@ hr {
     padding-top: 1.5rem;
   }
 }
+
+/* —— Inscrições —— */
+.enrollments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.enrollment-card {
+  background: var(--card, #fff);
+  border: 1px solid var(--border, #e5e8e5);
+  border-radius: 12px;
+  padding: 1.1rem 1.2rem;
+}
+
+.enrollment-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.enrollment-card-head h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.enrollment-meta {
+  font-size: 0.85rem;
+  color: var(--muted, #666);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.enrollment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.enrollment-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.55rem 1rem;
+  margin: 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border, #e5e8e5);
+  font-size: 0.85rem;
+}
+
+.enrollment-details dt {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted, #888);
+  margin: 0 0 0.15rem;
+}
+
+.enrollment-details dd {
+  margin: 0;
+  color: var(--text, #1a1a1a);
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.chip-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.chip-done {
+  background: rgba(11, 143, 58, 0.12);
+  color: #0b8f3a;
+}

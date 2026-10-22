@@ -220,6 +220,24 @@
               </select>
             </div>
 
+            <div class="enroll-price-box" id="enrollPriceBox" aria-live="polite">
+              <span class="enroll-price-label" data-i18n="formPriceLabel">Valor mensal</span>
+              <strong class="enroll-price-value" id="enrollPriceValue">—</strong>
+            </div>
+
+            <p class="form-section-title" data-i18n="formSectionPayment">Pagamento</p>
+
+            <div class="form-group">
+              <label for="payment_method" data-i18n="formPayment">Método de pagamento preferido *</label>
+              <select id="payment_method" name="payment_method" required>
+                <option value="" disabled selected data-i18n="formPaymentPh">Seleccione</option>
+                <option value="referencia" data-i18n="optPayRef">Referência Multicaixa</option>
+                <option value="iban" data-i18n="optPayIban">Transferência IBAN</option>
+                <option value="express" data-i18n="optPayExpress">Multicaixa Express</option>
+              </select>
+              <p class="field-hint" data-i18n="formPaymentHint">A equipa enviará os dados de pagamento (referência ou IBAN) conforme a sua escolha.</p>
+            </div>
+
             <p class="form-section-title" data-i18n="formSectionEnglish">Sobre o seu inglês</p>
 
             <div class="form-group">
@@ -247,8 +265,9 @@
               <textarea id="message" name="message" rows="2" placeholder="Outras informações relevantes" data-i18n-placeholder="formNotesPh"></textarea>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-full" data-i18n="formEnrollSubmit">Enviar inscrição</button>
-            <p class="form-hint" data-i18n="formHint">Após enviar, verá a confirmação e a equipa entrará em contacto com os próximos passos de pagamento.</p>
+            <p class="auth-error enroll-form-error" id="enrollError" hidden></p>
+            <button type="submit" class="btn btn-primary btn-full" id="enrollSubmitBtn" data-i18n="formEnrollSubmit">Enviar inscrição</button>
+            <p class="form-hint" data-i18n="formHint">Após enviar, a inscrição fica na área da equipa. Contactamo-lo por telefone, e-mail ou WhatsApp com os próximos passos de pagamento.</p>
           </form>
 
           <!-- Post-enrolment confirmation -->
@@ -351,6 +370,7 @@
     </div>
   </aside>
 
+  <script src="js/config.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

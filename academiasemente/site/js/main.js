@@ -119,6 +119,30 @@
     document.body.removeChild(a);
   }
 
+  // ---------- Course prices (Kz / month) ----------
+  var COURSE_PRICES = {
+    Online: 10525,
+    Presencial: 15225,
+    Domiciliar: 100000,
+    'Teste de nível': 0,
+  };
+
+  function formatEnrollPrice(n) {
+    if (n === 0) return (typeof currentLang !== 'undefined' && currentLang === 'en') ? 'Free' : 'Grátis';
+    return n.toLocaleString('pt-AO') + ' Kz/mês';
+  }
+
+  function updateEnrollPrice() {
+    var select = document.getElementById('interest');
+    var valueEl = document.getElementById('enrollPriceValue');
+    if (!select || !valueEl) return;
+    var course = select.value;
+    var amount = Object.prototype.hasOwnProperty.call(COURSE_PRICES, course)
+      ? COURSE_PRICES[course]
+      : null;
+    valueEl.textContent = amount == null ? '—' : formatEnrollPrice(amount);
+  }
+
   // ---------- Pre-select course from ?course= ----------
   (function preselectCourse() {
     var select = document.getElementById('interest');
@@ -126,6 +150,8 @@
     var params = new URLSearchParams(window.location.search);
     var course = params.get('course');
     if (course) select.value = course;
+    select.addEventListener('change', updateEnrollPrice);
+    updateEnrollPrice();
   })();
 
   // ---------- Contact form → WhatsApp ----------
@@ -148,7 +174,7 @@
     });
   }
 
-  // ---------- Enrollment form → WhatsApp ----------
+  // ---------- Enrollment form → Admin API ----------
   if (enrollForm) {
     enrollForm.addEventListener('submit', function (e) {
       e.preventDefault();
@@ -156,45 +182,78 @@
         var el = document.getElementById(id);
         return el ? String(el.value || '').trim() : '';
       }
-      var name = val('name');
-      var age = val('age');
-      var marital = val('marital');
-      var email = val('email');
-      var phone = val('phone');
-      var address = val('address');
-      var province = val('province');
-      var municipality = val('municipality');
-      var interest = val('interest');
-      var level = val('level');
-      var schedule = val('schedule');
-      var motivation = val('motivation');
-      var difficulties = val('difficulties');
-      var experience = val('experience');
-      var topics = val('topics');
-      var message = val('message');
+      var errEl = document.getElementById('enrollError');
+      var submitBtn = document.getElementById('enrollSubmitBtn');
+      if (errEl) {
+        errEl.hidden = true;
+        errEl.textContent = '';
+      }
 
-      var text = 'Olá! Gostaria de *inscrever-me* na Academia Semente.\n\n';
-      text += '*Dados pessoais*\n';
-      text += 'Nome: *' + name + '*\n';
-      text += 'Idade: ' + age + '\n';
-      text += 'Estado civil: ' + marital + '\n';
-      text += 'E-mail: ' + email + '\n';
-      text += 'Telefone: ' + phone + '\n';
-      text += 'Morada: ' + address + '\n';
-      text += 'Província: ' + province + '\n';
-      text += 'Município: ' + municipality + '\n\n';
-      text += '*Curso*\n';
-      text += 'Curso: *' + interest + '*\n';
-      text += 'Nível: *' + level + '*\n';
-      text += 'Horário: *' + schedule + '*\n\n';
-      text += '*Sobre o inglês*\n';
-      text += 'Motivação: ' + motivation + '\n\n';
-      text += 'Dificuldades: ' + difficulties + '\n\n';
-      text += 'Experiência anterior: ' + experience + '\n\n';
-      text += 'Temas prioritários: ' + topics + '\n';
-      if (message) text += '\nNotas: ' + message;
-      openWhatsApp(text);
-      showEnrollSuccess(name);
+      var name = val('name');
+      var payload = {
+        name: name,
+        age: val('age'),
+        marital: val('marital'),
+        email: val('email'),
+        phone: val('phone'),
+        address: val('address'),
+        province: val('province'),
+        municipality: val('municipality'),
+        course: val('interest'),
+        level: val('level'),
+        schedule: val('schedule'),
+        payment_method: val('payment_method'),
+        motivation: val('motivation'),
+        difficulties: val('difficulties'),
+        experience: val('experience'),
+        topics: val('topics'),
+        notes: val('message'),
+      };
+
+      var apiBase = (window.ACADEMIA_CONFIG && window.ACADEMIA_CONFIG.WORKER_URL) || '';
+      apiBase = apiBase.replace(/\/$/, '');
+      if (!apiBase) {
+        if (errEl) {
+          errEl.textContent = 'Serviço indisponível. Tente mais tarde ou contacte no WhatsApp.';
+          errEl.hidden = false;
+        }
+        return;
+      }
+
+      if (submitBtn) submitBtn.disabled = true;
+      fetch(apiBase + '/api/enroll', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+        .then(function (res) {
+          return res.text().then(function (text) {
+            var data = {};
+            try {
+              data = text ? JSON.parse(text) : {};
+            } catch (err) {
+              data = { error: text || 'Erro do servidor' };
+            }
+            if (!res.ok) throw new Error(data.error || 'Erro ' + res.status);
+            return data;
+          });
+        })
+        .then(function () {
+          showEnrollSuccess(name);
+          enrollForm.reset();
+          updateEnrollPrice();
+        })
+        .catch(function (err) {
+          if (errEl) {
+            errEl.textContent =
+              err.message ||
+              'Não foi possível enviar a inscrição. Verifique a ligação ou contacte no WhatsApp.';
+            errEl.hidden = false;
+          }
+        })
+        .finally(function () {
+          if (submitBtn) submitBtn.disabled = false;
+        });
     });
   }
 
@@ -790,6 +849,14 @@
       formLevelPh: 'Seleccione o nível',
       formSchedule: 'Horários disponíveis',
       formSchedulePh: 'Seleccione o horário',
+      formPriceLabel: 'Valor mensal',
+      formSectionPayment: 'Pagamento',
+      formPayment: 'Método de pagamento preferido',
+      formPaymentPh: 'Seleccione',
+      formPaymentHint: 'A equipa enviará os dados de pagamento (referência ou IBAN) conforme a sua escolha.',
+      optPayRef: 'Referência Multicaixa',
+      optPayIban: 'Transferência IBAN',
+      optPayExpress: 'Multicaixa Express',
       formSectionPersonal: 'Dados pessoais',
       formSectionCourse: 'Curso e horário',
       formSectionEnglish: 'Sobre o seu inglês',
@@ -804,7 +871,7 @@
       formNotes: 'Notas (opcional)',
       formNotesPh: 'Outras informações relevantes',
       formEnrollSubmit: 'Enviar inscrição',
-      formHint: 'Após enviar, verá a confirmação e a equipa entrará em contacto com os próximos passos de pagamento.',
+      formHint: 'Após enviar, a inscrição fica na área da equipa. Contactamo-lo por telefone, e-mail ou WhatsApp com os próximos passos de pagamento.',
       successEyebrow: 'Inscrição recebida',
       successTitle: 'Obrigado,',
       successText: 'A sua inscrição foi registada com sucesso. Em breve enviaremos a <strong>referência de pagamento</strong> e o recibo por WhatsApp ou e-mail.',
@@ -987,6 +1054,14 @@
       formLevelPh: 'Select level',
       formSchedule: 'Available schedules',
       formSchedulePh: 'Select schedule',
+      formPriceLabel: 'Monthly fee',
+      formSectionPayment: 'Payment',
+      formPayment: 'Preferred payment method',
+      formPaymentPh: 'Select',
+      formPaymentHint: 'The team will send payment details (reference or IBAN) according to your choice.',
+      optPayRef: 'Multicaixa reference',
+      optPayIban: 'IBAN transfer',
+      optPayExpress: 'Multicaixa Express',
       formSectionPersonal: 'Personal details',
       formSectionCourse: 'Course and schedule',
       formSectionEnglish: 'About your English',
@@ -1001,7 +1076,7 @@
       formNotes: 'Notes (optional)',
       formNotesPh: 'Any other relevant information',
       formEnrollSubmit: 'Submit enrolment',
-      formHint: 'After submitting, you will see confirmation and the team will contact you about payment next steps.',
+      formHint: 'After submitting, your enrolment is saved for the team. We will contact you by phone, email or WhatsApp with payment next steps.',
       successEyebrow: 'Enrolment received',
       successTitle: 'Thank you,',
       successText: 'Your enrolment was registered successfully. We will soon send the <strong>payment reference</strong> and receipt by WhatsApp or email.',

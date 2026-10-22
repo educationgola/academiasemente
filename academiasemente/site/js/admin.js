@@ -109,6 +109,7 @@
       btn.classList.add('active');
       document.querySelectorAll('.panel').forEach((p) => (p.hidden = true));
       document.getElementById('panel-' + btn.dataset.panel).hidden = false;
+      if (btn.dataset.panel === 'enrollments') loadEnrollments();
     });
   });
 
@@ -117,6 +118,7 @@
     appView.hidden = false;
     loadStudents();
     loadCourses();
+    loadEnrollments();
   }
 
   // ==================== Students ====================
@@ -927,6 +929,185 @@
     } catch (err) {
       alert(err.message);
     }
+  }
+
+  // ==================== Inscrições ====================
+
+  const enrollmentsList = document.getElementById('enrollmentsList');
+  const enrollmentsCount = document.getElementById('enrollmentsCount');
+  const enrollmentStatusFilter = document.getElementById('enrollmentStatusFilter');
+  let enrollmentsCache = [];
+
+  const PAY_LABELS = {
+    referencia: 'Referência Multicaixa',
+    iban: 'Transferência IBAN',
+    express: 'Multicaixa Express',
+  };
+
+  function formatKz(n) {
+    const v = Number(n) || 0;
+    if (v === 0) return 'Grátis';
+    return v.toLocaleString('pt-AO') + ' Kz';
+  }
+
+  function phoneDigits(phone) {
+    return String(phone || '').replace(/\D/g, '');
+  }
+
+  function whatsappHref(phone, name, course) {
+    let digits = phoneDigits(phone);
+    if (!digits) return '';
+    if (digits.length === 9) digits = '244' + digits;
+    const text =
+      'Olá' +
+      (name ? ' ' + name : '') +
+      ', sou da Academia Semente. Sobre a sua inscrição' +
+      (course ? ' no curso ' + course : '') +
+      '…';
+    return 'https://wa.me/' + digits + '?text=' + encodeURIComponent(text);
+  }
+
+  async function loadEnrollments() {
+    if (!enrollmentsList) return;
+    enrollmentsList.innerHTML = '<p class="muted">A carregar…</p>';
+    try {
+      const status = enrollmentStatusFilter ? enrollmentStatusFilter.value : 'pending';
+      const q = status ? '?status=' + encodeURIComponent(status) : '';
+      const data = await api('/admin/enrollments' + q);
+      enrollmentsCache = data.enrollments || [];
+      renderEnrollments();
+    } catch (err) {
+      enrollmentsList.innerHTML = '<p class="error">' + esc(err.message) + '</p>';
+    }
+  }
+
+  function renderEnrollments() {
+    if (!enrollmentsList) return;
+    if (enrollmentsCount) {
+      enrollmentsCount.textContent = enrollmentsCache.length
+        ? enrollmentsCache.length + ' inscrição(ões)'
+        : 'Nenhuma inscrição neste filtro.';
+    }
+    if (!enrollmentsCache.length) {
+      enrollmentsList.innerHTML =
+        '<div class="empty-state">Nenhuma inscrição. Quando alguém preencher o formulário em inscricao.html, aparece aqui.</div>';
+      return;
+    }
+
+    enrollmentsList.innerHTML = enrollmentsCache
+      .map((e) => {
+        const wa = whatsappHref(e.phone, e.name, e.course);
+        const pay = PAY_LABELS[e.payment_method] || e.payment_method || '—';
+        const statusChip =
+          e.status === 'done'
+            ? '<span class="chip chip-done">Concluída</span>'
+            : '<span class="chip chip-pending">Pendente</span>';
+        return (
+          '<article class="enrollment-card" data-id="' +
+          esc(e.id) +
+          '">' +
+          '<div class="enrollment-card-head">' +
+          '<div>' +
+          '<h3>' +
+          esc(e.name) +
+          '</h3>' +
+          '<div class="enrollment-meta">' +
+          statusChip +
+          ' <span>' +
+          esc(e.course || '') +
+          '</span> · <strong>' +
+          formatKz(e.amount_kz) +
+          '</strong> · ' +
+          esc(pay) +
+          '</div>' +
+          '</div>' +
+          '<div class="enrollment-actions">' +
+          (e.status !== 'done'
+            ? '<button type="button" class="btn btn-sm" data-enroll-done="' +
+              esc(e.id) +
+              '">Concluir</button>'
+            : '') +
+          (wa
+            ? '<a class="btn btn-sm btn-outline" href="' +
+              esc(wa) +
+              '" target="_blank" rel="noopener">WhatsApp</a>'
+            : '') +
+          '<button type="button" class="btn btn-sm btn-danger" data-enroll-del="' +
+          esc(e.id) +
+          '">Apagar</button>' +
+          '</div>' +
+          '</div>' +
+          '<dl class="enrollment-details">' +
+          row('Email', e.email) +
+          row('Telefone', e.phone) +
+          row('Idade', e.age) +
+          row('Estado civil', e.marital) +
+          row('Morada', e.address) +
+          row('Província', e.province) +
+          row('Município', e.municipality) +
+          row('Nível', e.level) +
+          row('Horário', e.schedule) +
+          row('Motivação', e.motivation) +
+          row('Dificuldades', e.difficulties) +
+          row('Experiência', e.experience) +
+          row('Temas', e.topics) +
+          row('Notas', e.notes) +
+          row('Recebido', e.created_at) +
+          '</dl>' +
+          '</article>'
+        );
+      })
+      .join('');
+  }
+
+  function row(label, value) {
+    if (value == null || value === '') return '';
+    return (
+      '<div><dt>' +
+      esc(label) +
+      '</dt><dd>' +
+      esc(String(value)) +
+      '</dd></div>'
+    );
+  }
+
+  if (document.getElementById('refreshEnrollments')) {
+    document.getElementById('refreshEnrollments').addEventListener('click', loadEnrollments);
+  }
+  if (enrollmentStatusFilter) {
+    enrollmentStatusFilter.addEventListener('change', loadEnrollments);
+  }
+
+  if (enrollmentsList) {
+    enrollmentsList.addEventListener('click', async (ev) => {
+      const doneBtn = ev.target.closest('[data-enroll-done]');
+      const delBtn = ev.target.closest('[data-enroll-del]');
+      if (doneBtn) {
+        const id = doneBtn.getAttribute('data-enroll-done');
+        try {
+          await api('/admin/enrollments/done', {
+            method: 'POST',
+            body: JSON.stringify({ id }),
+          });
+          loadEnrollments();
+        } catch (err) {
+          alert(err.message);
+        }
+      }
+      if (delBtn) {
+        const id = delBtn.getAttribute('data-enroll-del');
+        if (!confirm('Apagar esta inscrição permanentemente?')) return;
+        try {
+          await api('/admin/enrollments/delete', {
+            method: 'POST',
+            body: JSON.stringify({ id }),
+          });
+          loadEnrollments();
+        } catch (err) {
+          alert(err.message);
+        }
+      }
+    });
   }
 
   // —— Boot ——
