@@ -260,9 +260,9 @@
               </td>
               <td data-label="Estado">
                 <select class="status-select" data-status-id="${s.id}" title="Alterar estado">
-                  <option value="pending"${s.status === 'pending' ? ' selected' : ''}>pending</option>
-                  <option value="active"${s.status === 'active' ? ' selected' : ''}>active</option>
-                  <option value="suspended"${s.status === 'suspended' ? ' selected' : ''}>suspended</option>
+                  <option value="pending"${s.status === 'pending' ? ' selected' : ''}>Pendente</option>
+                  <option value="active"${s.status === 'active' ? ' selected' : ''}>Activo</option>
+                  <option value="suspended"${s.status === 'suspended' ? ' selected' : ''}>Suspenso</option>
                 </select>
               </td>
               <td data-label="Cursos" class="courses-cell">
