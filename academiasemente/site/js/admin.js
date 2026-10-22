@@ -97,30 +97,77 @@
     }
   });
 
-  document.getElementById('adminLogout').addEventListener('click', () => {
+  function doLogout() {
     clearToken();
     location.reload();
-  });
+  }
+  document.getElementById('adminLogout').addEventListener('click', doLogout);
+  const logoutMobile = document.getElementById('adminLogoutMobile');
+  if (logoutMobile) logoutMobile.addEventListener('click', doLogout);
 
-  // —— Nav ——
-  document.querySelectorAll('.nav-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.nav-btn').forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
-      document.querySelectorAll('.panel').forEach((p) => (p.hidden = true));
-      document.getElementById('panel-' + btn.dataset.panel).hidden = false;
-      if (btn.dataset.panel === 'enrollments') loadEnrollments();
-      if (btn.dataset.panel === 'orders') loadOrders();
+  // —— Nav (sidebar + bottom bar share .nav-btn) ——
+  const PANEL_TITLES = {
+    students: 'Alunos',
+    enrollments: 'Inscrições',
+    orders: 'Encomendas',
+    courses: 'Cursos',
+    notify: 'Avisos',
+    guide: 'Guia',
+  };
+
+  function switchPanel(panel) {
+    if (!panel) return;
+    document.querySelectorAll('.nav-btn').forEach((b) => {
+      b.classList.toggle('active', b.dataset.panel === panel);
     });
+    document.querySelectorAll('.panel').forEach((p) => (p.hidden = true));
+    const el = document.getElementById('panel-' + panel);
+    if (el) el.hidden = false;
+    const titleEl = document.getElementById('pageTitle');
+    if (titleEl) titleEl.textContent = PANEL_TITLES[panel] || panel;
+    if (panel === 'enrollments') loadEnrollments();
+    if (panel === 'orders') loadOrders();
+    if (panel === 'students') loadStudents();
+    if (panel === 'courses') loadCourses();
+    if (panel === 'notify') populateNotifyUsers();
+  }
+
+  document.querySelectorAll('.nav-btn').forEach((btn) => {
+    btn.addEventListener('click', () => switchPanel(btn.dataset.panel));
   });
 
   function showApp() {
     loginView.hidden = true;
     appView.hidden = false;
+    loadSummary();
     loadStudents();
     loadCourses();
     loadEnrollments();
     loadOrders();
+  }
+
+  async function loadSummary() {
+    try {
+      const data = await api('/admin/summary');
+      const counts = (data && data.counts) || {};
+      document.querySelectorAll('[data-count]').forEach((el) => {
+        const key = el.getAttribute('data-count');
+        const n = Number(counts[key]) || 0;
+        if (el.classList.contains('nav-count')) {
+          if (n > 0) {
+            el.hidden = false;
+            el.textContent = n > 99 ? '99+' : String(n);
+          } else {
+            el.hidden = true;
+            el.textContent = '';
+          }
+        } else if (el.classList.contains('nav-dot')) {
+          el.hidden = n <= 0;
+        }
+      });
+    } catch (_) {
+      /* non-blocking */
+    }
   }
 
   // ==================== Students ====================
@@ -969,15 +1016,23 @@
     return 'https://wa.me/' + digits + '?text=' + encodeURIComponent(text);
   }
 
+  const enrollmentSearch = document.getElementById('enrollmentSearch');
+  let enrollSearchTimer = null;
+
   async function loadEnrollments() {
     if (!enrollmentsList) return;
     enrollmentsList.innerHTML = '<p class="muted">A carregar…</p>';
     try {
       const status = enrollmentStatusFilter ? enrollmentStatusFilter.value : 'pending';
-      const q = status ? '?status=' + encodeURIComponent(status) : '';
-      const data = await api('/admin/enrollments' + q);
+      const qText = enrollmentSearch ? enrollmentSearch.value.trim() : '';
+      const params = new URLSearchParams();
+      if (status) params.set('status', status);
+      if (qText) params.set('q', qText);
+      const qs = params.toString() ? '?' + params.toString() : '';
+      const data = await api('/admin/enrollments' + qs);
       enrollmentsCache = data.enrollments || [];
       renderEnrollments();
+      loadSummary();
     } catch (err) {
       enrollmentsList.innerHTML = '<p class="error">' + esc(err.message) + '</p>';
     }
@@ -1079,6 +1134,12 @@
   if (enrollmentStatusFilter) {
     enrollmentStatusFilter.addEventListener('change', loadEnrollments);
   }
+  if (enrollmentSearch) {
+    enrollmentSearch.addEventListener('input', () => {
+      clearTimeout(enrollSearchTimer);
+      enrollSearchTimer = setTimeout(loadEnrollments, 280);
+    });
+  }
 
   if (enrollmentsList) {
     enrollmentsList.addEventListener('click', async (ev) => {
@@ -1117,17 +1178,24 @@
   const ordersList = document.getElementById('ordersList');
   const ordersCount = document.getElementById('ordersCount');
   const orderStatusFilter = document.getElementById('orderStatusFilter');
+  const orderSearch = document.getElementById('orderSearch');
   let ordersCache = [];
+  let orderSearchTimer = null;
 
   async function loadOrders() {
     if (!ordersList) return;
     ordersList.innerHTML = '<p class="muted">A carregar…</p>';
     try {
       const status = orderStatusFilter ? orderStatusFilter.value : 'pending';
-      const q = status ? '?status=' + encodeURIComponent(status) : '';
-      const data = await api('/admin/orders' + q);
+      const qText = orderSearch ? orderSearch.value.trim() : '';
+      const params = new URLSearchParams();
+      if (status) params.set('status', status);
+      if (qText) params.set('q', qText);
+      const qs = params.toString() ? '?' + params.toString() : '';
+      const data = await api('/admin/orders' + qs);
       ordersCache = data.orders || [];
       renderOrders();
+      loadSummary();
     } catch (err) {
       ordersList.innerHTML = '<p class="error">' + esc(err.message) + '</p>';
     }
@@ -1225,6 +1293,12 @@
   if (orderStatusFilter) {
     orderStatusFilter.addEventListener('change', loadOrders);
   }
+  if (orderSearch) {
+    orderSearch.addEventListener('input', () => {
+      clearTimeout(orderSearchTimer);
+      orderSearchTimer = setTimeout(loadOrders, 280);
+    });
+  }
 
   if (ordersList) {
     ordersList.addEventListener('click', async (ev) => {
@@ -1253,6 +1327,84 @@
           loadOrders();
         } catch (err) {
           alert(err.message);
+        }
+      }
+    });
+  }
+
+
+  // ==================== Admin notifications ====================
+
+  function populateNotifyUsers() {
+    const sel = document.getElementById('notifyUserSelect');
+    if (!sel) return;
+    const current = sel.value;
+    const opts = ['<option value="">— escolha —</option>'];
+    (studentsCache || []).forEach((s) => {
+      const label = (s.name || s.email || s.id) + (s.status ? ' · ' + s.status : '');
+      opts.push('<option value="' + esc(s.id) + '">' + esc(label) + '</option>');
+    });
+    sel.innerHTML = opts.join('');
+    if (current) sel.value = current;
+  }
+
+  const notifyOneForm = document.getElementById('notifyOneForm');
+  if (notifyOneForm) {
+    notifyOneForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const status = document.getElementById('notifyOneStatus');
+      const user_id = document.getElementById('notifyUserSelect').value;
+      const title = document.getElementById('notifyOneTitle').value.trim();
+      const body = document.getElementById('notifyOneBody').value.trim();
+      if (!user_id || !title) return;
+      try {
+        await api('/admin/notifications', {
+          method: 'POST',
+          body: JSON.stringify({ user_id, title, body }),
+        });
+        if (status) {
+          status.hidden = false;
+          status.className = 'hint success-hint';
+          status.textContent = 'Aviso enviado.';
+        }
+        document.getElementById('notifyOneTitle').value = '';
+        document.getElementById('notifyOneBody').value = '';
+      } catch (err) {
+        if (status) {
+          status.hidden = false;
+          status.className = 'hint error-hint';
+          status.textContent = err.message || 'Erro ao enviar.';
+        }
+      }
+    });
+  }
+
+  const notifyBroadcastForm = document.getElementById('notifyBroadcastForm');
+  if (notifyBroadcastForm) {
+    notifyBroadcastForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const status = document.getElementById('notifyBcStatus');
+      const title = document.getElementById('notifyBcTitle').value.trim();
+      const body = document.getElementById('notifyBcBody').value.trim();
+      if (!title) return;
+      if (!confirm('Enviar este aviso a todos os alunos activos?')) return;
+      try {
+        const data = await api('/admin/notifications/broadcast', {
+          method: 'POST',
+          body: JSON.stringify({ title, body, only_active: true }),
+        });
+        if (status) {
+          status.hidden = false;
+          status.className = 'hint success-hint';
+          status.textContent = 'Enviado a ' + (data.sent || 0) + ' aluno(s).';
+        }
+        document.getElementById('notifyBcTitle').value = '';
+        document.getElementById('notifyBcBody').value = '';
+      } catch (err) {
+        if (status) {
+          status.hidden = false;
+          status.className = 'hint error-hint';
+          status.textContent = err.message || 'Erro no broadcast.';
         }
       }
     });

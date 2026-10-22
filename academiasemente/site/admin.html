@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f1419">
   <title>Admin | Academia Semente</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/admin.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
 </head>
@@ -14,8 +15,13 @@
   <!-- LOGIN -->
   <div id="loginView" class="login-view">
     <form id="adminLoginForm" class="login-card">
-      <h1>Admin</h1>
-      <p>Academia Semente</p>
+      <div class="login-brand">
+        <span class="login-mark" aria-hidden="true">AS</span>
+        <div>
+          <h1>Admin</h1>
+          <p>Academia Semente</p>
+        </div>
+      </div>
       <label>
         <span>Palavra-passe</span>
         <div class="password-field">
@@ -39,155 +45,285 @@
 
   <!-- APP -->
   <div id="appView" class="app-view" hidden>
-    <header class="admin-header">
-      <strong>Admin · Academia Semente</strong>
-      <button type="button" id="adminLogout" class="btn-text">Sair</button>
-    </header>
+    <aside class="app-sidebar" aria-label="Navegação">
+      <div class="sidebar-brand">
+        <span class="brand-mark" aria-hidden="true">AS</span>
+        <div class="brand-text">
+          <strong>Admin</strong>
+          <span>Academia Semente</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <button type="button" class="nav-btn active" data-panel="students">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>Alunos</span>
+          <span class="nav-count" data-count="students_pending" hidden></span>
+        </button>
+        <button type="button" class="nav-btn" data-panel="enrollments">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span>Inscrições</span>
+          <span class="nav-count" data-count="enrollments_pending" hidden></span>
+        </button>
+        <button type="button" class="nav-btn" data-panel="orders">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          <span>Encomendas</span>
+          <span class="nav-count" data-count="orders_pending" hidden></span>
+        </button>
+        <button type="button" class="nav-btn" data-panel="courses">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+          <span>Cursos</span>
+        </button>
+        <button type="button" class="nav-btn" data-panel="notify">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span>Avisos</span>
+        </button>
+        <button type="button" class="nav-btn" data-panel="guide">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span>Guia</span>
+        </button>
+      </nav>
+      <div class="sidebar-footer">
+        <button type="button" id="adminLogout" class="btn-logout">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sair
+        </button>
+      </div>
+    </aside>
 
-    <nav class="admin-nav">
-      <button type="button" class="nav-btn active" data-panel="students">Alunos</button>
-      <button type="button" class="nav-btn" data-panel="enrollments">Inscrições</button>
-      <button type="button" class="nav-btn" data-panel="orders">Encomendas</button>
-      <button type="button" class="nav-btn" data-panel="courses">Cursos &amp; Vídeos</button>
-      <button type="button" class="nav-btn" data-panel="guide">Guia</button>
+    <div class="app-body">
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <h1 class="page-title" id="pageTitle">Alunos</h1>
+        </div>
+        <div class="topbar-right">
+          <span class="topbar-badge">Staff</span>
+          <button type="button" id="adminLogoutMobile" class="btn-text topbar-logout">Sair</button>
+        </div>
+      </header>
+
+      <main class="admin-main">
+        <!-- Students -->
+        <section id="panel-students" class="panel">
+          <div class="panel-head">
+            <div class="panel-head-text">
+              <p class="panel-eyebrow">Gestão</p>
+              <h2>Alunos</h2>
+            </div>
+            <button type="button" class="btn btn-outline" id="refreshStudents">Actualizar</button>
+          </div>
+          <div class="students-toolbar toolbar">
+            <input type="search" id="studentSearch" placeholder="Pesquisar nome ou email…" autocomplete="off">
+            <select id="studentStatusFilter">
+              <option value="">Todos os estados</option>
+              <option value="pending">Pending</option>
+              <option value="active">Active</option>
+              <option value="suspended">Suspended</option>
+            </select>
+            <button type="button" class="btn btn-sm btn-danger" id="bulkDeleteProbes" title="Apaga contas de teste (email com test.com / example.com / probe)">Limpar probes</button>
+          </div>
+          <p class="muted count-line" id="studentsCount"></p>
+          <div id="studentsTable" class="table-wrap">
+            <p class="muted">A carregar…</p>
+          </div>
+        </section>
+
+        <!-- Enrolments -->
+        <section id="panel-enrollments" class="panel" hidden>
+          <div class="panel-head">
+            <div class="panel-head-text">
+              <p class="panel-eyebrow">Pedidos</p>
+              <h2>Inscrições</h2>
+            </div>
+            <button type="button" class="btn btn-outline" id="refreshEnrollments">Actualizar</button>
+          </div>
+          <div class="students-toolbar toolbar">
+            <input type="search" id="enrollmentSearch" placeholder="Pesquisar nome, email, telefone…" autocomplete="off">
+            <select id="enrollmentStatusFilter">
+              <option value="pending">Pendentes</option>
+              <option value="done">Concluídas</option>
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <p class="muted count-line" id="enrollmentsCount"></p>
+          <div id="enrollmentsList" class="enrollments-list">
+            <p class="muted">A carregar…</p>
+          </div>
+        </section>
+
+        <!-- Orders -->
+        <section id="panel-orders" class="panel" hidden>
+          <div class="panel-head">
+            <div class="panel-head-text">
+              <p class="panel-eyebrow">Loja</p>
+              <h2>Encomendas</h2>
+            </div>
+            <button type="button" class="btn btn-outline" id="refreshOrders">Actualizar</button>
+          </div>
+          <div class="students-toolbar toolbar">
+            <input type="search" id="orderSearch" placeholder="Pesquisar nome, email, telefone…" autocomplete="off">
+            <select id="orderStatusFilter">
+              <option value="pending">Pendentes</option>
+              <option value="done">Concluídas</option>
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <p class="muted count-line" id="ordersCount"></p>
+          <div id="ordersList" class="enrollments-list">
+            <p class="muted">A carregar…</p>
+          </div>
+        </section>
+
+        <!-- Courses -->
+        <section id="panel-courses" class="panel" hidden>
+          <div class="panel-head">
+            <div class="panel-head-text">
+              <p class="panel-eyebrow">Conteúdo</p>
+              <h2>Cursos &amp; Vídeos</h2>
+            </div>
+            <button type="button" class="btn btn-outline" id="refreshCourses">Actualizar</button>
+          </div>
+          <div id="coursesAdmin" class="courses-admin">
+            <p class="muted">A carregar…</p>
+          </div>
+
+          <div class="form-section">
+            <h3 id="courseFormTitle">Novo curso</h3>
+            <form id="courseForm" class="form-grid">
+              <input type="hidden" name="id" id="courseIdField" value="">
+              <label>Título (PT) <input name="title_pt" required placeholder="Ex.: Inglês A1"></label>
+              <label>Título (EN) <input name="title_en" placeholder="Optional"></label>
+              <label>Descrição (PT) <textarea name="description_pt" rows="2" placeholder="Breve descrição do curso"></textarea></label>
+              <label>Capa do curso (imagem)
+                <input type="file" name="cover_file" id="courseCoverFile" accept="image/jpeg,image/png,image/webp,image/gif">
+              </label>
+              <label>Cover URL <span class="field-optional">(opcional — preenchido após upload)</span>
+                <input name="cover_url" id="courseCoverUrl" placeholder="https://…" inputmode="url">
+              </label>
+              <p class="hint" id="coverUploadStatus" hidden></p>
+              <div class="form-actions">
+                <button type="submit" class="btn" id="courseSubmitBtn">Guardar curso</button>
+                <button type="button" class="btn btn-outline" id="courseCancelEdit" hidden>Cancelar edição</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="form-section">
+            <h3 id="videoFormTitle">Novo vídeo</h3>
+            <form id="videoForm" class="form-grid">
+              <input type="hidden" name="id" id="videoIdField" value="">
+              <label>Curso
+                <select name="course_id" id="videoCourseSelect" required>
+                  <option value="">— escolha um curso —</option>
+                </select>
+              </label>
+              <label>Título (PT) <input name="title_pt" required placeholder="Ex.: Aula 01 — Introdução"></label>
+              <label>Ficheiro de vídeo (upload Cloudinary)
+                <input type="file" name="video_file" id="videoFileInput" accept="video/*">
+              </label>
+              <label>Cloudinary public_id
+                <input name="cloudinary_public_id" id="videoPublicId" placeholder="Preenchido após upload, ou cole manualmente">
+              </label>
+              <label>Duração (segundos, opcional — auto no upload)
+                <input name="duration_seconds" type="number" inputmode="numeric" placeholder="Auto após upload">
+              </label>
+              <p class="hint" id="uploadStatus" hidden></p>
+              <div class="form-actions">
+                <button type="submit" class="btn" id="videoSubmitBtn">Guardar vídeo</button>
+                <button type="button" class="btn btn-outline" id="videoCancelEdit" hidden>Cancelar edição</button>
+              </div>
+            </form>
+            <p class="hint">Pode fazer <strong>upload directo</strong> do ficheiro (tipo authenticated no Cloudinary) ou colar um public_id já existente.</p>
+          </div>
+        </section>
+
+        <!-- Notifications -->
+        <section id="panel-notify" class="panel" hidden>
+          <div class="panel-head">
+            <div class="panel-head-text">
+              <p class="panel-eyebrow">Comunicação</p>
+              <h2>Avisos aos alunos</h2>
+            </div>
+          </div>
+          <div class="form-section">
+            <h3>Enviar a um aluno</h3>
+            <form id="notifyOneForm" class="form-grid">
+              <label>Aluno
+                <select id="notifyUserSelect" required>
+                  <option value="">— escolha —</option>
+                </select>
+              </label>
+              <label>Título <input name="title" id="notifyOneTitle" required placeholder="Ex.: Lembrete de aula"></label>
+              <label>Mensagem <textarea name="body" id="notifyOneBody" rows="3" placeholder="Texto do aviso"></textarea></label>
+              <div class="form-actions">
+                <button type="submit" class="btn">Enviar aviso</button>
+              </div>
+              <p class="hint" id="notifyOneStatus" hidden></p>
+            </form>
+          </div>
+          <div class="form-section">
+            <h3>Broadcast (todos os activos)</h3>
+            <form id="notifyBroadcastForm" class="form-grid">
+              <label>Título <input name="title" id="notifyBcTitle" required placeholder="Ex.: Feriado / horário"></label>
+              <label>Mensagem <textarea name="body" id="notifyBcBody" rows="3" placeholder="Mensagem para todos os alunos activos"></textarea></label>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-outline">Enviar a todos os activos</button>
+              </div>
+              <p class="hint" id="notifyBcStatus" hidden></p>
+            </form>
+          </div>
+        </section>
+
+        <!-- Guide -->
+        <section id="panel-guide" class="panel" hidden>
+          <div class="panel-head">
+            <div class="panel-head-text">
+              <p class="panel-eyebrow">Ajuda</p>
+              <h2>Guia rápido</h2>
+            </div>
+          </div>
+          <div class="guide-card">
+            <ol class="guide-list">
+              <li><strong>Alunos</strong> — criam conta em /conta (Google ou email). Estado inicial: <em>pending</em>.</li>
+              <li>Crie um <strong>Curso</strong> e adicione <strong>Vídeos</strong> (upload ou public_id do Cloudinary).</li>
+              <li>Em Alunos, clique <strong>Atribuir curso</strong>. O estado passa a <em>active</em>.</li>
+              <li>Use <strong>Revogar</strong> para retirar o acesso a um curso.</li>
+              <li><strong>Editar / Eliminar</strong> — soft-delete esconde o curso ou vídeo dos alunos (não apaga ficheiros no Cloudinary).</li>
+              <li>O aluno vê os vídeos no dashboard; o Worker gera links assinados temporários.</li>
+              <li><strong>Avisos</strong> — envie notificações a um aluno ou a todos os activos.</li>
+              <li><strong>Certificados</strong> — emitidos automaticamente quando o aluno conclui 100% dos vídeos.</li>
+            </ol>
+            <p class="hint">Se algo falhar → contacte o programador. Não partilhe a palavra-passe de admin.</p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Mobile bottom tab bar -->
+    <nav class="bottom-nav" aria-label="Navegação principal">
+      <button type="button" class="nav-btn active" data-panel="students">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Alunos</span>
+        <span class="nav-dot" data-count="students_pending" hidden></span>
+      </button>
+      <button type="button" class="nav-btn" data-panel="enrollments">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span>Inscrições</span>
+        <span class="nav-dot" data-count="enrollments_pending" hidden></span>
+      </button>
+      <button type="button" class="nav-btn" data-panel="orders">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span>Loja</span>
+        <span class="nav-dot" data-count="orders_pending" hidden></span>
+      </button>
+      <button type="button" class="nav-btn" data-panel="courses">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+        <span>Cursos</span>
+      </button>
+      <button type="button" class="nav-btn" data-panel="notify">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span>Avisos</span>
+      </button>
     </nav>
-
-    <main class="admin-main">
-      <!-- Students -->
-      <section id="panel-students" class="panel">
-        <div class="panel-head">
-          <h2>Alunos</h2>
-          <button type="button" class="btn btn-outline" id="refreshStudents">Actualizar</button>
-        </div>
-        <div class="students-toolbar">
-          <input type="search" id="studentSearch" placeholder="Pesquisar nome ou email…" autocomplete="off">
-          <select id="studentStatusFilter">
-            <option value="">Todos os estados</option>
-            <option value="pending">Pending</option>
-            <option value="active">Active</option>
-            <option value="suspended">Suspended</option>
-          </select>
-          <button type="button" class="btn btn-sm btn-danger" id="bulkDeleteProbes" title="Apaga contas de teste (email com test.com / example.com / probe)">Limpar probes</button>
-        </div>
-        <p class="muted" id="studentsCount" style="margin:0 0 0.75rem"></p>
-        <div id="studentsTable" class="table-wrap">
-          <p class="muted">A carregar…</p>
-        </div>
-      </section>
-
-      <!-- Enrolments / Inscrições -->
-      <section id="panel-enrollments" class="panel" hidden>
-        <div class="panel-head">
-          <h2>Inscrições</h2>
-          <button type="button" class="btn btn-outline" id="refreshEnrollments">Actualizar</button>
-        </div>
-        <div class="students-toolbar">
-          <select id="enrollmentStatusFilter">
-            <option value="pending">Pendentes</option>
-            <option value="done">Concluídas</option>
-            <option value="">Todas</option>
-          </select>
-        </div>
-        <p class="muted" id="enrollmentsCount" style="margin:0 0 0.75rem"></p>
-        <div id="enrollmentsList" class="enrollments-list">
-          <p class="muted">A carregar…</p>
-        </div>
-      </section>
-
-      <!-- Orders / Encomendas -->
-      <section id="panel-orders" class="panel" hidden>
-        <div class="panel-head">
-          <h2>Encomendas</h2>
-          <button type="button" class="btn btn-outline" id="refreshOrders">Actualizar</button>
-        </div>
-        <div class="students-toolbar">
-          <select id="orderStatusFilter">
-            <option value="pending">Pendentes</option>
-            <option value="done">Concluídas</option>
-            <option value="">Todas</option>
-          </select>
-        </div>
-        <p class="muted" id="ordersCount" style="margin:0 0 0.75rem"></p>
-        <div id="ordersList" class="enrollments-list">
-          <p class="muted">A carregar…</p>
-        </div>
-      </section>
-
-      <!-- Courses -->
-      <section id="panel-courses" class="panel" hidden>
-        <div class="panel-head">
-          <h2>Cursos &amp; Vídeos</h2>
-          <button type="button" class="btn btn-outline" id="refreshCourses">Actualizar</button>
-        </div>
-        <div id="coursesAdmin" class="courses-admin">
-          <p class="muted">A carregar…</p>
-        </div>
-
-        <div class="form-section">
-          <h3 id="courseFormTitle">Novo curso</h3>
-          <form id="courseForm" class="form-grid">
-            <input type="hidden" name="id" id="courseIdField" value="">
-            <label>Título (PT) <input name="title_pt" required placeholder="Ex.: Inglês A1"></label>
-            <label>Título (EN) <input name="title_en" placeholder="Optional"></label>
-            <label>Descrição (PT) <textarea name="description_pt" rows="2" placeholder="Breve descrição do curso"></textarea></label>
-            <label>Capa do curso (imagem)
-              <input type="file" name="cover_file" id="courseCoverFile" accept="image/jpeg,image/png,image/webp,image/gif">
-            </label>
-            <label>Cover URL <span class="field-optional">(opcional — preenchido após upload)</span>
-              <input name="cover_url" id="courseCoverUrl" placeholder="https://…" inputmode="url">
-            </label>
-            <p class="hint" id="coverUploadStatus" hidden></p>
-            <div class="form-actions">
-              <button type="submit" class="btn" id="courseSubmitBtn">Guardar curso</button>
-              <button type="button" class="btn btn-outline" id="courseCancelEdit" hidden>Cancelar edição</button>
-            </div>
-          </form>
-        </div>
-
-        <div class="form-section">
-          <h3 id="videoFormTitle">Novo vídeo</h3>
-          <form id="videoForm" class="form-grid">
-            <input type="hidden" name="id" id="videoIdField" value="">
-            <label>Curso
-              <select name="course_id" id="videoCourseSelect" required>
-                <option value="">— escolha um curso —</option>
-              </select>
-            </label>
-            <label>Título (PT) <input name="title_pt" required placeholder="Ex.: Aula 01 — Introdução"></label>
-            <label>Ficheiro de vídeo (upload Cloudinary)
-              <input type="file" name="video_file" id="videoFileInput" accept="video/*">
-            </label>
-            <label>Cloudinary public_id
-              <input name="cloudinary_public_id" id="videoPublicId" placeholder="Preenchido após upload, ou cole manualmente">
-            </label>
-            <label>Duração (segundos, opcional — auto no upload)
-              <input name="duration_seconds" type="number" inputmode="numeric" placeholder="Auto após upload">
-            </label>
-
-            <p class="hint" id="uploadStatus" hidden></p>
-            <div class="form-actions">
-              <button type="submit" class="btn" id="videoSubmitBtn">Guardar vídeo</button>
-              <button type="button" class="btn btn-outline" id="videoCancelEdit" hidden>Cancelar edição</button>
-            </div>
-          </form>
-          <p class="hint">Pode fazer <strong>upload directo</strong> do ficheiro (tipo authenticated no Cloudinary) ou colar um public_id já existente.</p>
-        </div>
-      </section>
-
-      <!-- Guide -->
-      <section id="panel-guide" class="panel" hidden>
-        <h2>Guia rápido</h2>
-        <ol class="guide-list">
-          <li><strong>Alunos</strong> — criam conta em /conta.html (Google ou email). Estado inicial: <em>pending</em>.</li>
-          <li>Crie um <strong>Curso</strong> e adicione <strong>Vídeos</strong> (upload ou public_id do Cloudinary).</li>
-          <li>Em Alunos, clique <strong>Atribuir curso</strong>. O estado passa a <em>active</em>.</li>
-          <li>Use <strong>Revogar</strong> para retirar o acesso a um curso.</li>
-          <li><strong>Editar / Eliminar</strong> — soft-delete esconde o curso ou vídeo dos alunos (não apaga ficheiros no Cloudinary).</li>
-          <li>O aluno vê os vídeos no dashboard; o Worker gera links assinados temporários.</li>
-        </ol>
-        <p class="hint">Se algo falhar → contacte o programador. Não partilhe a palavra-passe de admin.</p>
-      </section>
-    </main>
   </div>
 
   <!-- Grant modal -->

@@ -46,10 +46,21 @@ export default {
       }
       if (path === '/api/student/profile' && request.method === 'POST') return handleUpdateProfile(request, env);
       if (path === '/api/student/password' && request.method === 'POST') return handleChangePassword(request, env);
+      if (path === '/api/student/notifications' && request.method === 'GET') return handleListNotifications(request, env);
+      if (path === '/api/student/notifications/read' && request.method === 'POST') return handleReadNotifications(request, env);
+      if (path === '/api/student/certificates' && request.method === 'GET') return handleListCertificates(request, env);
+      if (path === '/api/student/certificates/claim' && request.method === 'POST') return handleClaimCertificate(request, env);
+      if (path.match(/^\/api\/student\/certificates\/[^/]+$/) && request.method === 'GET') {
+        const certId = path.split('/')[4];
+        return handleGetCertificate(request, env, certId);
+      }
 
       // ---------- Admin (password) ----------
       if (path === '/api/admin/login' && request.method === 'POST') return handleAdminLogin(request, env);
       if (path === '/api/admin/publish' && request.method === 'POST') return handlePublish(request, env);
+      if (path === '/api/admin/summary' && request.method === 'GET') return handleAdminSummary(request, env);
+      if (path === '/api/admin/notifications' && request.method === 'POST') return handleAdminSendNotification(request, env);
+      if (path === '/api/admin/notifications/broadcast' && request.method === 'POST') return handleAdminBroadcast(request, env);
       if (path === '/api/admin/students' && request.method === 'GET') return handleListStudents(request, env);
       if (path === '/api/admin/students/grant' && request.method === 'POST') return handleGrantCourse(request, env);
       if (path === '/api/admin/students/revoke' && request.method === 'POST') return handleRevokeCourse(request, env);
@@ -531,9 +542,10 @@ async function handleSaveProgress(request, env, videoId) {
 
   // Ownership check
   const row = await env.DB.prepare(`
-    SELECT v.id, v.duration_seconds
+    SELECT v.id, v.duration_seconds, v.course_id, c.title_pt AS course_title
     FROM videos v
     JOIN user_courses uc ON uc.course_id = v.course_id
+    JOIN courses c ON c.id = v.course_id
     WHERE v.id = ? AND uc.user_id = ? AND uc.status = 'active' AND v.active = 1
   `).bind(videoId, payload.sub).first();
 
@@ -571,7 +583,229 @@ async function handleSaveProgress(request, env, videoId) {
     throw err;
   }
 
-  return json({ ok: true, position_seconds: position, completed });
+  // Auto-issue certificate + notify when course reaches 100%
+  let certificate = null;
+  if (completed && row.course_id) {
+    try {
+      certificate = await maybeAutoCertificate(env, payload.sub, row.course_id, row.course_title);
+    } catch (_) {}
+  }
+
+  return json({ ok: true, position_seconds: position, completed, certificate });
+}
+
+async function maybeAutoCertificate(env, userId, courseId, courseTitleHint) {
+  const stats = await env.DB.prepare(
+    `SELECT
+       (SELECT COUNT(*) FROM videos v WHERE v.course_id = ? AND v.active = 1) AS total,
+       (SELECT COUNT(*) FROM videos v
+          JOIN watch_progress wp ON wp.video_id = v.id AND wp.user_id = ? AND wp.completed = 1
+        WHERE v.course_id = ? AND v.active = 1) AS done`
+  )
+    .bind(courseId, userId, courseId)
+    .first();
+  const total = Number(stats && stats.total) || 0;
+  const done = Number(stats && stats.done) || 0;
+  if (total === 0 || done < total) return null;
+
+  const existing = await env.DB.prepare(
+    `SELECT id, course_id, student_name, course_title, issued_at FROM certificates WHERE user_id = ? AND course_id = ?`
+  )
+    .bind(userId, courseId)
+    .first();
+  if (existing) return existing;
+
+  const user = await env.DB.prepare(`SELECT name, email FROM users WHERE id = ?`).bind(userId).first();
+  const studentName = (user && user.name) || (user && user.email) || 'Aluno';
+  let courseTitle = courseTitleHint;
+  if (!courseTitle) {
+    const c = await env.DB.prepare(`SELECT title_pt FROM courses WHERE id = ?`).bind(courseId).first();
+    courseTitle = (c && c.title_pt) || 'Curso';
+  }
+
+  const id = uuid();
+  await env.DB.prepare(
+    `INSERT INTO certificates (id, user_id, course_id, student_name, course_title) VALUES (?, ?, ?, ?, ?)`
+  )
+    .bind(id, userId, courseId, studentName, courseTitle)
+    .run();
+
+  await createNotification(env, userId, {
+    title: 'Certificado disponível',
+    body: `Parabéns! Concluiu «${courseTitle}». O certificado está na área Certificados.`,
+    type: 'certificate',
+  });
+
+  return {
+    id,
+    course_id: courseId,
+    student_name: studentName,
+    course_title: courseTitle,
+    issued_at: new Date().toISOString(),
+  };
+}
+
+// ---------- Notifications & certificates ----------
+
+async function createNotification(env, userId, { title, body, type, link }) {
+  if (!env.DB || !userId || !title) return;
+  try {
+    await env.DB.prepare(
+      `INSERT INTO notifications (id, user_id, title, body, type, link) VALUES (?, ?, ?, ?, ?, ?)`
+    )
+      .bind(uuid(), userId, title, body || null, type || 'info', link || null)
+      .run();
+  } catch (_) {
+    /* table may not exist yet */
+  }
+}
+
+async function handleListNotifications(request, env) {
+  const payload = await requireStudent(request, env);
+  try {
+    const { results } = await env.DB.prepare(
+      `SELECT id, title, body, type, link, read_at, created_at
+       FROM notifications WHERE user_id = ?
+       ORDER BY created_at DESC LIMIT 50`
+    )
+      .bind(payload.sub)
+      .all();
+    const unread = (results || []).filter((n) => !n.read_at).length;
+    return json({ notifications: results || [], unread });
+  } catch (err) {
+    if (String(err.message || '').includes('no such table')) {
+      return json({ notifications: [], unread: 0 });
+    }
+    throw err;
+  }
+}
+
+async function handleReadNotifications(request, env) {
+  const payload = await requireStudent(request, env);
+  const body = await readBody(request);
+  try {
+    if (body.id) {
+      await env.DB.prepare(
+        `UPDATE notifications SET read_at = datetime('now') WHERE id = ? AND user_id = ? AND read_at IS NULL`
+      )
+        .bind(body.id, payload.sub)
+        .run();
+    } else {
+      await env.DB.prepare(
+        `UPDATE notifications SET read_at = datetime('now') WHERE user_id = ? AND read_at IS NULL`
+      )
+        .bind(payload.sub)
+        .run();
+    }
+    return json({ ok: true });
+  } catch (err) {
+    if (String(err.message || '').includes('no such table')) {
+      return json({ ok: true });
+    }
+    throw err;
+  }
+}
+
+async function handleListCertificates(request, env) {
+  const payload = await requireStudent(request, env);
+  try {
+    const { results } = await env.DB.prepare(
+      `SELECT id, course_id, student_name, course_title, issued_at
+       FROM certificates WHERE user_id = ?
+       ORDER BY issued_at DESC`
+    )
+      .bind(payload.sub)
+      .all();
+    return json({ certificates: results || [] });
+  } catch (err) {
+    if (String(err.message || '').includes('no such table')) {
+      return json({ certificates: [] });
+    }
+    throw err;
+  }
+}
+
+async function handleClaimCertificate(request, env) {
+  const payload = await requireActiveStudent(request, env);
+  const body = await readBody(request);
+  const courseId = body.course_id;
+  if (!courseId) return json({ error: 'course_id obrigatório' }, 400);
+
+  // Must have active grant
+  const grant = await env.DB.prepare(
+    `SELECT uc.user_id, c.title_pt, c.title_en
+     FROM user_courses uc
+     JOIN courses c ON c.id = uc.course_id
+     WHERE uc.user_id = ? AND uc.course_id = ? AND uc.status = 'active' AND c.active = 1`
+  )
+    .bind(payload.sub, courseId)
+    .first();
+  if (!grant) return json({ error: 'Curso não encontrado ou sem acesso.' }, 403);
+
+  // All videos completed
+  const stats = await env.DB.prepare(
+    `SELECT
+       (SELECT COUNT(*) FROM videos v WHERE v.course_id = ? AND v.active = 1) AS total,
+       (SELECT COUNT(*) FROM videos v
+          JOIN watch_progress wp ON wp.video_id = v.id AND wp.user_id = ? AND wp.completed = 1
+        WHERE v.course_id = ? AND v.active = 1) AS done`
+  )
+    .bind(courseId, payload.sub, courseId)
+    .first();
+
+  const total = Number(stats && stats.total) || 0;
+  const done = Number(stats && stats.done) || 0;
+  if (total === 0 || done < total) {
+    return json({ error: 'Conclua todos os vídeos do curso para obter o certificado.', progress: { total, done } }, 400);
+  }
+
+  const user = await env.DB.prepare(`SELECT name, email FROM users WHERE id = ?`).bind(payload.sub).first();
+  const studentName = (user && user.name) || (user && user.email) || 'Aluno';
+  const courseTitle = grant.title_pt || grant.title_en || 'Curso';
+
+  const existing = await env.DB.prepare(
+    `SELECT id, course_id, student_name, course_title, issued_at FROM certificates WHERE user_id = ? AND course_id = ?`
+  )
+    .bind(payload.sub, courseId)
+    .first();
+
+  if (existing) {
+    return json({ ok: true, certificate: existing, already: true });
+  }
+
+  const id = uuid();
+  await env.DB.prepare(
+    `INSERT INTO certificates (id, user_id, course_id, student_name, course_title) VALUES (?, ?, ?, ?, ?)`
+  )
+    .bind(id, payload.sub, courseId, studentName, courseTitle)
+    .run();
+
+  await createNotification(env, payload.sub, {
+    title: 'Certificado disponível',
+    body: `Concluiu o curso «${courseTitle}». O seu certificado está pronto.`,
+    type: 'certificate',
+  });
+
+  const certificate = {
+    id,
+    course_id: courseId,
+    student_name: studentName,
+    course_title: courseTitle,
+    issued_at: new Date().toISOString(),
+  };
+  return json({ ok: true, certificate });
+}
+
+async function handleGetCertificate(request, env, certId) {
+  const payload = await requireStudent(request, env);
+  const row = await env.DB.prepare(
+    `SELECT id, course_id, student_name, course_title, issued_at
+     FROM certificates WHERE id = ? AND user_id = ?`
+  )
+    .bind(certId, payload.sub)
+    .first();
+  if (!row) return json({ error: 'Certificado não encontrado.' }, 404);
+  return json({ certificate: row });
 }
 
 async function handleUpdateProfile(request, env) {
@@ -777,18 +1011,74 @@ async function handlePublish(request, env) {
   return json({ ok: true, url: result.secure_url, public_id: result.public_id });
 }
 
+async function handleAdminSummary(request, env) {
+  await requireAdmin(request, env);
+  const count = async (sql, binds = []) => {
+    try {
+      const row = binds.length
+        ? await env.DB.prepare(sql).bind(...binds).first()
+        : await env.DB.prepare(sql).first();
+      return Number(row && row.n) || 0;
+    } catch (_) {
+      return 0;
+    }
+  };
+  const [
+    students,
+    students_pending,
+    enrollments_pending,
+    orders_pending,
+    courses,
+  ] = await Promise.all([
+    count(`SELECT COUNT(*) AS n FROM users`),
+    count(`SELECT COUNT(*) AS n FROM users WHERE status = 'pending'`),
+    count(`SELECT COUNT(*) AS n FROM enrollments WHERE status = 'pending'`),
+    count(`SELECT COUNT(*) AS n FROM orders WHERE status = 'pending'`),
+    count(`SELECT COUNT(*) AS n FROM courses WHERE active = 1`),
+  ]);
+  return json({
+    ok: true,
+    counts: {
+      students,
+      students_pending,
+      enrollments_pending,
+      orders_pending,
+      courses,
+    },
+  });
+}
+
 async function handleListStudents(request, env) {
   await requireAdmin(request, env);
-  const { results } = await env.DB.prepare(`
+  const url = new URL(request.url);
+  const q = (url.searchParams.get('q') || '').trim().toLowerCase();
+  const status = (url.searchParams.get('status') || '').trim();
+  const limit = Math.min(500, Math.max(1, parseInt(url.searchParams.get('limit') || '500', 10) || 500));
+
+  let sql = `
     SELECT u.id, u.email, u.name, u.picture, u.status, u.phone, u.created_at, u.updated_at,
            (SELECT COUNT(*) FROM user_courses uc WHERE uc.user_id = u.id AND uc.status = 'active') AS courses_count
     FROM users u
-    ORDER BY u.created_at DESC
-    LIMIT 500
-  `).all();
+  `;
+  const where = [];
+  const binds = [];
+  if (status === 'pending' || status === 'active' || status === 'suspended') {
+    where.push('u.status = ?');
+    binds.push(status);
+  }
+  if (q) {
+    where.push('(LOWER(u.name) LIKE ? OR LOWER(u.email) LIKE ? OR LOWER(IFNULL(u.phone,\'\')) LIKE ?)');
+    const like = '%' + q + '%';
+    binds.push(like, like, like);
+  }
+  if (where.length) sql += ' WHERE ' + where.join(' AND ');
+  sql += ' ORDER BY u.created_at DESC LIMIT ?';
+  binds.push(limit);
+
+  const { results } = await env.DB.prepare(sql).bind(...binds).all();
 
   // Attach all grants (active + history) for admin UI
-  for (const s of results) {
+  for (const s of results || []) {
     const { results: grants } = await env.DB.prepare(`
       SELECT uc.course_id, c.title_pt, uc.granted_at, uc.status, uc.expires_at
       FROM user_courses uc
@@ -801,7 +1091,10 @@ async function handleListStudents(request, env) {
     s.course_history = all;
   }
 
-  return json({ students: results });
+  return json({
+    students: results || [],
+    meta: { q: q || null, status: status || null, count: (results || []).length },
+  });
 }
 
 async function handleUpdateStudent(request, env) {
@@ -846,6 +1139,44 @@ async function handleDeleteStudent(request, env) {
   return json({ ok: true });
 }
 
+async function handleAdminSendNotification(request, env) {
+  await requireAdmin(request, env);
+  const body = await readBody(request);
+  const userId = body.user_id;
+  const title = String(body.title || '').trim();
+  const msg = String(body.body || body.message || '').trim();
+  const type = String(body.type || 'system').trim() || 'system';
+  if (!userId) return json({ error: 'user_id obrigatório' }, 400);
+  if (!title) return json({ error: 'Título obrigatório' }, 400);
+
+  const user = await env.DB.prepare(`SELECT id FROM users WHERE id = ?`).bind(userId).first();
+  if (!user) return json({ error: 'Aluno não encontrado' }, 404);
+
+  await createNotification(env, userId, { title, body: msg || null, type });
+  return json({ ok: true });
+}
+
+async function handleAdminBroadcast(request, env) {
+  await requireAdmin(request, env);
+  const body = await readBody(request);
+  const title = String(body.title || '').trim();
+  const msg = String(body.body || body.message || '').trim();
+  const type = String(body.type || 'system').trim() || 'system';
+  const onlyActive = body.only_active !== false;
+  if (!title) return json({ error: 'Título obrigatório' }, 400);
+
+  let sql = `SELECT id FROM users`;
+  if (onlyActive) sql += ` WHERE status = 'active'`;
+  const { results } = await env.DB.prepare(sql).all();
+  const users = results || [];
+  let sent = 0;
+  for (const u of users) {
+    await createNotification(env, u.id, { title, body: msg || null, type });
+    sent += 1;
+  }
+  return json({ ok: true, sent });
+}
+
 async function handleGrantCourse(request, env) {
   await requireAdmin(request, env);
   const body = await readBody(request);
@@ -861,6 +1192,17 @@ async function handleGrantCourse(request, env) {
   // Optionally activate the user
   await env.DB.prepare(`UPDATE users SET status = 'active', updated_at = datetime('now') WHERE id = ? AND status = 'pending'`)
     .bind(user_id).run();
+
+  // Notify student (best-effort)
+  try {
+    const course = await env.DB.prepare(`SELECT title_pt FROM courses WHERE id = ?`).bind(course_id).first();
+    const title = (course && course.title_pt) || 'um curso';
+    await createNotification(env, user_id, {
+      title: 'Novo curso atribuído',
+      body: `Tem acesso a: ${title}. Abra a área de aluno para começar.`,
+      type: 'course',
+    });
+  } catch (_) {}
 
   return json({ ok: true });
 }
@@ -1170,19 +1512,33 @@ async function handleListEnrollments(request, env) {
   await requireAdmin(request, env);
   const url = new URL(request.url);
   const status = (url.searchParams.get('status') || '').trim();
+  const q = (url.searchParams.get('q') || '').trim().toLowerCase();
+  const limit = Math.min(200, Math.max(1, parseInt(url.searchParams.get('limit') || '200', 10) || 200));
 
   let sql = `SELECT * FROM enrollments`;
+  const where = [];
   const binds = [];
   if (status === 'pending' || status === 'done') {
-    sql += ` WHERE status = ?`;
+    where.push('status = ?');
     binds.push(status);
   }
-  sql += ` ORDER BY created_at DESC LIMIT 200`;
+  if (q) {
+    where.push(
+      `(LOWER(IFNULL(name,'')) LIKE ? OR LOWER(IFNULL(email,'')) LIKE ? OR LOWER(IFNULL(phone,'')) LIKE ? OR LOWER(IFNULL(course,'')) LIKE ?)`
+    );
+    const like = '%' + q + '%';
+    binds.push(like, like, like, like);
+  }
+  if (where.length) sql += ' WHERE ' + where.join(' AND ');
+  sql += ` ORDER BY created_at DESC LIMIT ?`;
+  binds.push(limit);
 
   try {
-    const stmt = env.DB.prepare(sql);
-    const { results } = binds.length ? await stmt.bind(...binds).all() : await stmt.all();
-    return json({ enrollments: results || [] });
+    const { results } = await env.DB.prepare(sql).bind(...binds).all();
+    return json({
+      enrollments: results || [],
+      meta: { q: q || null, status: status || null, count: (results || []).length },
+    });
   } catch (err) {
     if (String(err.message || '').includes('no such table')) {
       return json({ enrollments: [], error: 'Tabela enrollments em falta. Execute schema.sql.' });
@@ -1275,18 +1631,29 @@ async function handleListOrders(request, env) {
   await requireAdmin(request, env);
   const url = new URL(request.url);
   const status = (url.searchParams.get('status') || '').trim();
+  const q = (url.searchParams.get('q') || '').trim().toLowerCase();
+  const limit = Math.min(200, Math.max(1, parseInt(url.searchParams.get('limit') || '200', 10) || 200));
 
   let sql = `SELECT * FROM orders`;
+  const where = [];
   const binds = [];
   if (status === 'pending' || status === 'done') {
-    sql += ` WHERE status = ?`;
+    where.push('status = ?');
     binds.push(status);
   }
-  sql += ` ORDER BY created_at DESC LIMIT 200`;
+  if (q) {
+    where.push(
+      `(LOWER(IFNULL(name,'')) LIKE ? OR LOWER(IFNULL(email,'')) LIKE ? OR LOWER(IFNULL(phone,'')) LIKE ? OR LOWER(IFNULL(address,'')) LIKE ?)`
+    );
+    const like = '%' + q + '%';
+    binds.push(like, like, like, like);
+  }
+  if (where.length) sql += ' WHERE ' + where.join(' AND ');
+  sql += ` ORDER BY created_at DESC LIMIT ?`;
+  binds.push(limit);
 
   try {
-    const stmt = env.DB.prepare(sql);
-    const { results } = binds.length ? await stmt.bind(...binds).all() : await stmt.all();
+    const { results } = await env.DB.prepare(sql).bind(...binds).all();
     const orders = (results || []).map((o) => {
       let items = [];
       try {
@@ -1296,7 +1663,10 @@ async function handleListOrders(request, env) {
       }
       return { ...o, items };
     });
-    return json({ orders });
+    return json({
+      orders,
+      meta: { q: q || null, status: status || null, count: orders.length },
+    });
   } catch (err) {
     if (String(err.message || '').includes('no such table')) {
       return json({ orders: [], error: 'Tabela orders em falta. Execute schema.sql.' });

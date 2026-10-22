@@ -208,10 +208,192 @@
       if (coursesList) coursesList.innerHTML = '';
       if (noCourses) noCourses.hidden = true;
       if (continueCard) continueCard.hidden = true;
+      loadNotifications();
       return;
     }
 
     loadCourses();
+    loadNotifications();
+    loadCertificates();
+  }
+
+  // —— Student app panels (bottom nav) ——
+  function switchStuPanel(panel) {
+    document.querySelectorAll('.stu-nav-btn').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-panel') === panel);
+    });
+    document.querySelectorAll('.stu-panel').forEach(function (p) {
+      p.hidden = true;
+    });
+    var el = document.getElementById('panel-' + panel);
+    if (el) el.hidden = false;
+    if (panel === 'notifications') loadNotifications();
+    if (panel === 'certificates') loadCertificates();
+    if (panel === 'courses') loadCourses();
+  }
+
+  document.querySelectorAll('.stu-nav-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      switchStuPanel(btn.getAttribute('data-panel'));
+    });
+  });
+
+  var notifBell = document.getElementById('notifBell');
+  if (notifBell) {
+    notifBell.addEventListener('click', function () {
+      switchStuPanel('notifications');
+    });
+  }
+
+  function loadNotifications() {
+    var list = document.getElementById('notificationsList');
+    var notifDot = document.getElementById('notifDot');
+    var navDot = document.getElementById('navNotifDot');
+    api('/api/student/notifications')
+      .then(function (data) {
+        var items = data.notifications || [];
+        var unread = Number(data.unread) || 0;
+        if (notifDot) notifDot.hidden = unread <= 0;
+        if (navDot) navDot.hidden = unread <= 0;
+        if (!list) return;
+        if (!items.length) {
+          list.innerHTML = '<div class="empty-state-box"><p class="empty-state-title">Sem notificações</p><p class="empty-state-text">Quando tiver um curso novo ou certificado, aparece aqui.</p></div>';
+          return;
+        }
+        list.innerHTML = items
+          .map(function (n) {
+            return (
+              '<article class="notif-item' +
+              (n.read_at ? '' : ' is-unread') +
+              '" data-id="' +
+              escapeAttr(n.id) +
+              '">' +
+              '<h3>' +
+              escapeHtml(n.title) +
+              '</h3>' +
+              (n.body ? '<p>' + escapeHtml(n.body) + '</p>' : '') +
+              '<span class="notif-time">' +
+              escapeHtml((n.created_at || '').slice(0, 16).replace('T', ' ')) +
+              '</span></article>'
+            );
+          })
+          .join('');
+      })
+      .catch(function () {
+        if (list) list.innerHTML = '<p class="muted">Não foi possível carregar notificações.</p>';
+      });
+  }
+
+  var markAllRead = document.getElementById('markAllRead');
+  if (markAllRead) {
+    markAllRead.addEventListener('click', function () {
+      api('/api/student/notifications/read', { method: 'POST', body: {} })
+        .then(function () {
+          loadNotifications();
+        })
+        .catch(function () {});
+    });
+  }
+
+  function loadCertificates() {
+    var list = document.getElementById('certificatesList');
+    if (!list) return;
+    api('/api/student/certificates')
+      .then(function (data) {
+        var items = data.certificates || [];
+        if (!items.length) {
+          list.innerHTML =
+            '<div class="empty-state-box"><p class="empty-state-title">Ainda sem certificados</p><p class="empty-state-text">Conclua 100% de um curso e peça o certificado na ficha do curso.</p></div>';
+          return;
+        }
+        list.innerHTML = items
+          .map(function (c) {
+            return (
+              '<article class="cert-card">' +
+              '<div><h3>' +
+              escapeHtml(c.course_title) +
+              '</h3><p class="muted">Emitido ' +
+              escapeHtml((c.issued_at || '').slice(0, 10)) +
+              '</p></div>' +
+              '<button type="button" class="btn-outline btn-sm" data-view-cert="' +
+              escapeAttr(c.id) +
+              '">Ver</button></article>'
+            );
+          })
+          .join('');
+      })
+      .catch(function () {
+        list.innerHTML = '<p class="muted">Não foi possível carregar certificados.</p>';
+      });
+  }
+
+  function showCertificate(cert) {
+    var modal = document.getElementById('certModal');
+    var preview = document.getElementById('certPreview');
+    if (!modal || !preview || !cert) return;
+    var dateStr = (cert.issued_at || '').slice(0, 10);
+    preview.innerHTML =
+      '<div class="cert-logo">Academia Semente</div>' +
+      '<p class="cert-eyebrow">Certificado de conclusão</p>' +
+      '<p class="cert-name">' +
+      escapeHtml(cert.student_name) +
+      '</p>' +
+      '<p class="cert-course">' +
+      escapeHtml(cert.course_title) +
+      '</p>' +
+      '<p class="cert-date">Emitido em ' +
+      escapeHtml(dateStr) +
+      ' · Luanda, Angola</p>';
+    modal.hidden = false;
+  }
+
+  function claimCertificate(courseId) {
+    api('/api/student/certificates/claim', {
+      method: 'POST',
+      body: { course_id: courseId },
+    })
+      .then(function (data) {
+        if (data.certificate) {
+          showCertificate(data.certificate);
+          loadCertificates();
+          loadNotifications();
+        }
+      })
+      .catch(function (err) {
+        alert(err.message || 'Não foi possível emitir o certificado.');
+      });
+  }
+
+  document.body.addEventListener('click', function (e) {
+    var viewBtn = e.target.closest('[data-view-cert]');
+    if (viewBtn) {
+      var id = viewBtn.getAttribute('data-view-cert');
+      api('/api/student/certificates/' + encodeURIComponent(id))
+        .then(function (data) {
+          if (data.certificate) showCertificate(data.certificate);
+        })
+        .catch(function (err) {
+          alert(err.message);
+        });
+    }
+    var claimBtn = e.target.closest('[data-claim-cert]');
+    if (claimBtn) {
+      claimCertificate(claimBtn.getAttribute('data-claim-cert'));
+    }
+  });
+
+  var certClose = document.getElementById('certClose');
+  var certModal = document.getElementById('certModal');
+  var certPrint = document.getElementById('certPrint');
+  if (certClose && certModal) {
+    certClose.addEventListener('click', function () {
+      certModal.hidden = true;
+    });
+  }
+  if (certPrint) {
+    certPrint.addEventListener('click', function () {
+      window.print();
+    });
   }
 
   function skeletonHtml() {
@@ -360,6 +542,13 @@
               : '') +
             '</button>';
         }
+        var certCta = '';
+        if (prog.total > 0 && prog.completed >= prog.total) {
+          certCta =
+            '<button type="button" class="btn-primary btn-sm course-cert-btn" data-claim-cert="' +
+            escapeAttr(c.id) +
+            '">Obter certificado</button>';
+        }
 
         return (
           '<article class="course-card' +
@@ -402,6 +591,7 @@
               '</p>'
             : '') +
           continueCta +
+          certCta +
           '<div class="course-videos' +
           (openByDefault ? '' : ' is-collapsed') +
           '">' +
@@ -814,8 +1004,13 @@
         completed: true,
       },
     })
-      .then(function () {
+      .then(function (data) {
         loadCourses();
+        loadNotifications();
+        loadCertificates();
+        if (data && data.certificate && typeof showCertificate === 'function') {
+          showCertificate(data.certificate);
+        }
       })
       .catch(function () {});
   }
@@ -879,8 +1074,10 @@
     });
   }
 
-  // Discourage casual download
+  // Discourage casual download (best-effort — browsers still control real DRM)
   if (videoPlayer) {
+    videoPlayer.setAttribute('controlsList', 'nodownload noplaybackrate noremoteplayback');
+    videoPlayer.setAttribute('disablePictureInPicture', '');
     videoPlayer.addEventListener('contextmenu', function (e) {
       e.preventDefault();
     });
@@ -888,6 +1085,11 @@
       if ((e.metaKey || e.ctrlKey) && (e.key === 's' || e.key === 'S')) {
         e.preventDefault();
       }
+    });
+  }
+  if (videoModal) {
+    videoModal.addEventListener('contextmenu', function (e) {
+      e.preventDefault();
     });
   }
 

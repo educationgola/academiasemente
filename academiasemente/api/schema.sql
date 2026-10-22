@@ -137,3 +137,31 @@ CREATE TABLE IF NOT EXISTS orders (
 
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);
+
+-- In-app notifications for students
+CREATE TABLE IF NOT EXISTS notifications (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title       TEXT NOT NULL,
+  body        TEXT,
+  type        TEXT NOT NULL DEFAULT 'info',  -- info | course | certificate | system
+  link        TEXT,
+  read_at     TEXT,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications(user_id, read_at);
+
+-- Course completion certificates
+CREATE TABLE IF NOT EXISTS certificates (
+  id            TEXT PRIMARY KEY,
+  user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  course_id     TEXT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+  student_name  TEXT NOT NULL,
+  course_title  TEXT NOT NULL,
+  issued_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(user_id, course_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_certificates_user ON certificates(user_id);

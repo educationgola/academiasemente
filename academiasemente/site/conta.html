@@ -3,218 +3,266 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f1419">
   <meta name="description" content="Entrar — Academia Semente. Aceda aos seus cursos e vídeos privados.">
   <title>Entrar | Academia Semente</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/conta.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
-  <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body class="conta-page">
-  <header class="conta-header">
-    <a href="index.html" class="brand">
-      <span class="brand-name">ACADEMIA SEMENTE</span>
-      <span class="brand-tagline">Cultivando conhecimento</span>
-    </a>
-    <div class="conta-header-actions" id="headerActions">
-      <!-- filled by JS when logged in -->
+  <!-- AUTH -->
+  <div id="authSection" class="auth-shell">
+    <a href="index.html" class="auth-home">← Site</a>
+    <div class="auth-card">
+      <div class="auth-brand">
+        <span class="brand-mark">AS</span>
+        <div>
+          <h1>Entrar</h1>
+          <p>Cursos e vídeos privados</p>
+        </div>
+      </div>
+
+      <div id="googleBtnWrapper" class="google-btn-wrapper"></div>
+      <div class="auth-divider"><span>ou</span></div>
+
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab active" data-tab="login">Entrar</button>
+        <button type="button" class="auth-tab" data-tab="register">Criar conta</button>
+      </div>
+
+      <form id="loginForm" class="auth-form" autocomplete="on">
+        <label class="field">
+          <span>Email</span>
+          <input type="email" name="email" required inputmode="email" autocomplete="email" placeholder="seu@email.com">
+        </label>
+        <label class="field">
+          <span>Palavra-passe</span>
+          <input type="password" name="password" required minlength="6" autocomplete="current-password" placeholder="••••••••">
+        </label>
+        <p class="auth-error" id="loginError" hidden></p>
+        <button type="submit" class="btn-primary btn-block">Entrar</button>
+      </form>
+
+      <form id="registerForm" class="auth-form" hidden autocomplete="on">
+        <label class="field">
+          <span>Nome</span>
+          <input type="text" name="name" autocomplete="name" placeholder="O seu nome">
+        </label>
+        <label class="field">
+          <span>Email</span>
+          <input type="email" name="email" required inputmode="email" autocomplete="email" placeholder="seu@email.com">
+        </label>
+        <label class="field">
+          <span>Palavra-passe</span>
+          <input type="password" name="password" required minlength="6" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
+        </label>
+        <p class="auth-error" id="registerError" hidden></p>
+        <button type="submit" class="btn-primary btn-block">Criar conta</button>
+      </form>
+
+      <p class="auth-note">Depois de criar a conta, a equipa activa o seu acesso aos cursos.</p>
     </div>
-  </header>
+  </div>
 
-  <main class="conta-main">
-    <!-- ========== AUTH VIEWS ========== -->
-    <section id="authSection" class="auth-section">
-      <div class="auth-card">
-        <h1 class="auth-title">Entrar</h1>
-        <p class="auth-subtitle">Aceda aos seus cursos e vídeos privados</p>
-
-        <div id="googleBtnWrapper" class="google-btn-wrapper"></div>
-
-        <div class="auth-divider"><span>ou</span></div>
-
-        <div class="auth-tabs">
-          <button type="button" class="auth-tab active" data-tab="login">Entrar</button>
-          <button type="button" class="auth-tab" data-tab="register">Criar conta</button>
-        </div>
-
-        <form id="loginForm" class="auth-form" autocomplete="on">
-          <label class="field">
-            <span>Email</span>
-            <input type="email" name="email" required inputmode="email" autocomplete="email" placeholder="seu@email.com">
-          </label>
-          <label class="field">
-            <span>Palavra-passe</span>
-            <input type="password" name="password" required minlength="6" autocomplete="current-password" placeholder="••••••••">
-          </label>
-          <p class="auth-error" id="loginError" hidden></p>
-          <button type="submit" class="btn-primary btn-block">Entrar</button>
-        </form>
-
-        <form id="registerForm" class="auth-form" hidden autocomplete="on">
-          <label class="field">
-            <span>Nome</span>
-            <input type="text" name="name" autocomplete="name" placeholder="O seu nome">
-          </label>
-          <label class="field">
-            <span>Email</span>
-            <input type="email" name="email" required inputmode="email" autocomplete="email" placeholder="seu@email.com">
-          </label>
-          <label class="field">
-            <span>Palavra-passe</span>
-            <input type="password" name="password" required minlength="6" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
-          </label>
-          <p class="auth-error" id="registerError" hidden></p>
-          <button type="submit" class="btn-primary btn-block">Criar conta</button>
-        </form>
-
-        <p class="auth-note">Depois de criar a conta, a equipa da Academia Semente activa o seu acesso aos cursos.</p>
-      </div>
-    </section>
-
-    <!-- ========== DASHBOARD (logged in) ========== -->
-    <section id="dashboardSection" class="dashboard-section" hidden>
-      <div class="dash-top">
-        <div class="dash-user">
-          <img id="userAvatar" class="user-avatar" src="" alt="" hidden>
-          <div>
-            <h1 class="dash-greeting">Olá, <span id="userName">Aluno</span></h1>
-            <p class="dash-status">
-              Estado:
-              <span id="userStatusBadge" class="status-badge status-pending">—</span>
-            </p>
-          </div>
-        </div>
-        <div class="dash-top-actions">
-          <button type="button" class="btn-outline btn-sm" id="profileBtn">Perfil</button>
-          <button type="button" class="btn-outline btn-sm" id="logoutBtn">Sair</button>
+  <!-- APP -->
+  <div id="dashboardSection" class="app-shell" hidden>
+    <header class="app-topbar">
+      <div class="topbar-user">
+        <img id="userAvatar" class="user-avatar" src="" alt="" hidden>
+        <div>
+          <p class="topbar-greeting">Olá, <strong id="userName">Aluno</strong></p>
+          <p class="topbar-status">
+            <span id="userStatusBadge" class="status-badge status-pending">—</span>
+          </p>
         </div>
       </div>
+      <div class="topbar-actions">
+        <button type="button" class="icon-btn" id="notifBell" aria-label="Notificações" title="Notificações">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="notif-dot" id="notifDot" hidden></span>
+        </button>
+      </div>
+    </header>
 
+    <main class="app-main">
       <div id="pendingBanner" class="pending-banner" hidden>
         <strong>Conta pendente de activação</strong>
-        <p>A equipa da Academia Semente irá activar o seu acesso após confirmação do pagamento ou inscrição.</p>
-        <p class="pending-steps">Se já pagou ou enviou o comprovativo, aguarde ou contacte-nos.</p>
-        <a
-          id="pendingWhatsApp"
-          class="btn-whatsapp"
-          href="https://wa.me/244945574700?text=Ol%C3%A1%2C%20a%20minha%20conta%20est%C3%A1%20pendente.%20J%C3%A1%20enviei%20o%20comprovativo%20%2F%20fiz%20a%20inscri%C3%A7%C3%A3o."
-          target="_blank"
-          rel="noopener"
-        >Contactar no WhatsApp</a>
+        <p>A equipa irá activar o acesso após confirmação do pagamento ou inscrição.</p>
+        <a id="pendingWhatsApp" class="btn-whatsapp" href="https://wa.me/244945574700?text=Ol%C3%A1%2C%20a%20minha%20conta%20est%C3%A1%20pendente." target="_blank" rel="noopener">Contactar no WhatsApp</a>
       </div>
 
       <div id="suspendedBanner" class="suspended-banner" hidden>
         <strong>Conta suspensa</strong>
-        <p>O acesso aos cursos e vídeos está bloqueado. Contacte a Academia Semente para mais informações.</p>
-        <a
-          class="btn-whatsapp"
-          href="https://wa.me/244945574700?text=Ol%C3%A1%2C%20a%20minha%20conta%20est%C3%A1%20suspensa.%20Podem%20ajudar-me%3F"
-          target="_blank"
-          rel="noopener"
-        >Contactar no WhatsApp</a>
+        <p>O acesso aos cursos está bloqueado. Contacte a Academia Semente.</p>
+        <a class="btn-whatsapp" href="https://wa.me/244945574700?text=Ol%C3%A1%2C%20a%20minha%20conta%20est%C3%A1%20suspensa." target="_blank" rel="noopener">Contactar no WhatsApp</a>
       </div>
 
       <div id="offlineBanner" class="offline-banner" hidden>
-        Sem ligação ao servidor. Verifique a internet e se o serviço está activo.
+        Sem ligação ao servidor. Verifique a internet.
       </div>
 
-      <div id="continueCard" class="continue-card" hidden>
-        <div class="continue-label">Continuar de onde parou</div>
-        <button type="button" class="continue-btn" id="continueBtn">
-          <span class="continue-title" id="continueTitle">—</span>
-          <span class="continue-meta" id="continueMeta"></span>
-        </button>
-      </div>
-
-      <div class="section-head">
-        <h2 class="section-title">Os meus cursos</h2>
-      </div>
-      <div id="coursesList" class="courses-list">
-      </div>
-      <div id="noCourses" class="empty-state-box" hidden>
-        <p class="empty-state-title">Ainda não tem cursos atribuídos</p>
-        <p class="empty-state-text">Após a inscrição e activação, os seus cursos aparecem aqui. Pode contactar a academia ou ver os planos no site.</p>
-        <div class="empty-state-actions">
-          <a href="inscricao.html" class="btn-primary btn-inline">Ver inscrição</a>
-          <a href="https://wa.me/244945574700" target="_blank" rel="noopener" class="btn-outline btn-inline">WhatsApp</a>
-        </div>
-      </div>
-
-      <div id="profilePanel" class="profile-panel" hidden>
-        <div class="profile-panel-head">
-          <h2 class="section-title">O meu perfil</h2>
-          <button type="button" class="btn-text" id="profileClose">Fechar</button>
+      <!-- Panel: Cursos -->
+      <section id="panel-courses" class="stu-panel">
+        <div id="continueCard" class="continue-card" hidden>
+          <div class="continue-label">Continuar de onde parou</div>
+          <button type="button" class="continue-btn" id="continueBtn">
+            <span class="continue-title" id="continueTitle">—</span>
+            <span class="continue-meta" id="continueMeta"></span>
+          </button>
         </div>
 
-        <form id="profileForm" class="auth-form profile-form">
-          <label class="field">
-            <span>Nome</span>
-            <input type="text" name="name" id="profileName" autocomplete="name" placeholder="O seu nome">
-          </label>
-          <label class="field">
-            <span>Email</span>
-            <input type="email" id="profileEmail" disabled>
-          </label>
-          <label class="field">
-            <span>Telefone / WhatsApp</span>
-            <input type="tel" name="phone" id="profilePhone" autocomplete="tel" placeholder="+244 …" inputmode="tel">
-          </label>
-          <p class="auth-error" id="profileError" hidden></p>
-          <p class="auth-success" id="profileSuccess" hidden></p>
-          <button type="submit" class="btn-primary btn-block">Guardar perfil</button>
-        </form>
+        <div class="section-head">
+          <h2>Os meus cursos</h2>
+        </div>
+        <div id="coursesList" class="courses-list"></div>
+        <div id="noCourses" class="empty-state-box" hidden>
+          <p class="empty-state-title">Ainda não tem cursos atribuídos</p>
+          <p class="empty-state-text">Após a inscrição e activação, os cursos aparecem aqui.</p>
+          <div class="empty-state-actions">
+            <a href="inscricao.html" class="btn-primary btn-inline">Ver inscrição</a>
+            <a href="https://wa.me/244945574700" target="_blank" rel="noopener" class="btn-outline btn-inline">WhatsApp</a>
+          </div>
+        </div>
+      </section>
 
-        <div class="profile-password-block">
-          <h3 class="profile-subhead" id="passwordHeading">Palavra-passe</h3>
-          <form id="passwordForm" class="auth-form profile-form">
-            <label class="field" id="currentPasswordField">
-              <span>Palavra-passe actual</span>
-              <input type="password" name="current_password" id="currentPassword" autocomplete="current-password" placeholder="••••••••">
+      <!-- Panel: Notificações -->
+      <section id="panel-notifications" class="stu-panel" hidden>
+        <div class="section-head row-between">
+          <h2>Notificações</h2>
+          <button type="button" class="btn-text" id="markAllRead">Marcar todas lidas</button>
+        </div>
+        <div id="notificationsList" class="notif-list">
+          <p class="muted">A carregar…</p>
+        </div>
+      </section>
+
+      <!-- Panel: Certificados -->
+      <section id="panel-certificates" class="stu-panel" hidden>
+        <div class="section-head">
+          <h2>Certificados</h2>
+          <p class="section-sub">Emitidos quando conclui 100% de um curso.</p>
+        </div>
+        <div id="certificatesList" class="cert-list">
+          <p class="muted">A carregar…</p>
+        </div>
+      </section>
+
+      <!-- Panel: Perfil -->
+      <section id="panel-profile" class="stu-panel" hidden>
+        <div class="section-head">
+          <h2>O meu perfil</h2>
+        </div>
+        <div class="profile-card">
+          <form id="profileForm" class="auth-form profile-form">
+            <label class="field">
+              <span>Nome</span>
+              <input type="text" name="name" id="profileName" autocomplete="name" placeholder="O seu nome">
             </label>
             <label class="field">
-              <span>Nova palavra-passe</span>
-              <input type="password" name="new_password" id="newPassword" required minlength="6" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
+              <span>Email</span>
+              <input type="email" id="profileEmail" disabled>
             </label>
-            <p class="auth-error" id="passwordError" hidden></p>
-            <p class="auth-success" id="passwordSuccess" hidden></p>
-            <button type="submit" class="btn-outline btn-block" id="passwordSubmitBtn">Alterar palavra-passe</button>
+            <label class="field">
+              <span>Telefone / WhatsApp</span>
+              <input type="tel" name="phone" id="profilePhone" autocomplete="tel" placeholder="+244 …" inputmode="tel">
+            </label>
+            <p class="auth-error" id="profileError" hidden></p>
+            <p class="auth-success" id="profileSuccess" hidden></p>
+            <button type="submit" class="btn-primary btn-block">Guardar perfil</button>
           </form>
-        </div>
-      </div>
-    </section>
 
-    <!-- ========== VIDEO PLAYER MODAL ========== -->
-    <div id="videoModal" class="video-modal" hidden>
-      <div class="video-modal-inner">
-        <button type="button" class="video-close" id="videoClose" aria-label="Fechar">×</button>
+          <div class="profile-password-block">
+            <h3 class="profile-subhead" id="passwordHeading">Palavra-passe</h3>
+            <form id="passwordForm" class="auth-form profile-form">
+              <label class="field" id="currentPasswordField">
+                <span>Palavra-passe actual</span>
+                <input type="password" name="current_password" id="currentPassword" autocomplete="current-password" placeholder="••••••••">
+              </label>
+              <label class="field">
+                <span>Nova palavra-passe</span>
+                <input type="password" name="new_password" id="newPassword" required minlength="6" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
+              </label>
+              <p class="auth-error" id="passwordError" hidden></p>
+              <p class="auth-success" id="passwordSuccess" hidden></p>
+              <button type="submit" class="btn-outline btn-block" id="passwordSubmitBtn">Alterar palavra-passe</button>
+            </form>
+          </div>
+
+          <button type="button" class="btn-danger-outline btn-block" id="logoutBtn">Sair da conta</button>
+          <a href="index.html" class="link-back">← Voltar ao site</a>
+        </div>
+      </section>
+    </main>
+
+    <nav class="stu-bottom-nav" aria-label="Navegação">
+      <button type="button" class="stu-nav-btn active" data-panel="courses">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        <span>Cursos</span>
+      </button>
+      <button type="button" class="stu-nav-btn" data-panel="notifications">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span>Avisos</span>
+        <span class="nav-dot" id="navNotifDot" hidden></span>
+      </button>
+      <button type="button" class="stu-nav-btn" data-panel="certificates">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+        <span>Certificados</span>
+      </button>
+      <button type="button" class="stu-nav-btn" data-panel="profile">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Perfil</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- VIDEO PLAYER -->
+  <div id="videoModal" class="video-modal" hidden>
+    <div class="video-modal-inner">
+      <div class="video-modal-bar">
+        <button type="button" class="video-close" id="videoClose" aria-label="Fechar">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
         <h3 id="videoTitle" class="video-title"></h3>
-        <div class="video-wrap">
-          <video
-            id="videoPlayer"
-            controls
-            controlsList="nodownload noplaybackrate"
-            disablePictureInPicture
-            playsinline
-            preload="metadata"
-          ></video>
-        </div>
-        <div class="video-modal-footer">
-          <button type="button" class="btn-outline btn-sm" id="videoPrev" hidden>← Anterior</button>
-          <button type="button" class="btn-primary btn-sm" id="videoNext" hidden>Seguinte →</button>
-        </div>
+      </div>
+      <div class="video-wrap">
+        <video
+          id="videoPlayer"
+          controls
+          controlsList="nodownload noplaybackrate noremoteplayback"
+          disablePictureInPicture
+          playsinline
+          preload="metadata"
+        ></video>
+        <div class="video-shield" id="videoShield" aria-hidden="true"></div>
+      </div>
+      <div class="video-modal-footer">
+        <button type="button" class="btn-outline btn-sm" id="videoPrev" hidden>← Anterior</button>
+        <button type="button" class="btn-primary btn-sm" id="videoNext" hidden>Seguinte →</button>
+      </div>
+      <p class="video-hint">Conteúdo protegido · download desactivado</p>
+    </div>
+  </div>
+
+  <!-- Certificate preview modal -->
+  <div id="certModal" class="cert-modal" hidden>
+    <div class="cert-modal-inner">
+      <button type="button" class="video-close" id="certClose" aria-label="Fechar">×</button>
+      <div id="certPreview" class="cert-preview"></div>
+      <div class="cert-modal-actions">
+        <button type="button" class="btn-primary" id="certPrint">Imprimir / Guardar PDF</button>
       </div>
     </div>
-  </main>
+  </div>
 
-  <footer class="conta-footer">
-    <a href="index.html">← Voltar ao site</a>
-    <span>·</span>
-    <a href="https://wa.me/244945574700" target="_blank" rel="noopener">WhatsApp</a>
-  </footer>
+  <!-- Compat: hidden legacy ids used by older JS hooks -->
+  <button type="button" id="profileBtn" hidden></button>
+  <button type="button" id="profileClose" hidden></button>
+  <div id="profilePanel" hidden></div>
+  <div id="headerActions" hidden></div>
 
   <script src="js/config.js"></script>
   <script src="js/conta.js"></script>
