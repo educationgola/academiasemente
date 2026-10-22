@@ -25,68 +25,68 @@ export default {
     try {
       // ---------- Public ----------
       if (path === '/api/health') return json({ ok: true, ts: new Date().toISOString() });
-      if (path === '/api/enroll' && request.method === 'POST') return handlePublicEnroll(request, env);
-      if (path === '/api/orders' && request.method === 'POST') return handlePublicOrder(request, env);
+      if (path === '/api/enroll' && request.method === 'POST') return await handlePublicEnroll(request, env);
+      if (path === '/api/orders' && request.method === 'POST') return await handlePublicOrder(request, env);
 
       // ---------- Auth ----------
-      if (path === '/api/auth/register' && request.method === 'POST') return handleRegister(request, env);
-      if (path === '/api/auth/login' && request.method === 'POST') return handleLogin(request, env);
-      if (path === '/api/auth/google' && request.method === 'POST') return handleGoogle(request, env);
-      if (path === '/api/auth/me' && request.method === 'GET') return handleMe(request, env);
+      if (path === '/api/auth/register' && request.method === 'POST') return await handleRegister(request, env);
+      if (path === '/api/auth/login' && request.method === 'POST') return await handleLogin(request, env);
+      if (path === '/api/auth/google' && request.method === 'POST') return await handleGoogle(request, env);
+      if (path === '/api/auth/me' && request.method === 'GET') return await handleMe(request, env);
 
       // ---------- Student ----------
-      if (path === '/api/student/courses' && request.method === 'GET') return handleStudentCourses(request, env);
+      if (path === '/api/student/courses' && request.method === 'GET') return await handleStudentCourses(request, env);
       if (path.match(/^\/api\/student\/videos\/[^/]+\/url$/) && request.method === 'GET') {
         const videoId = path.split('/')[4];
-        return handleSignedVideoUrl(request, env, videoId);
+        return await handleSignedVideoUrl(request, env, videoId);
       }
       if (path.match(/^\/api\/student\/videos\/[^/]+\/progress$/) && request.method === 'POST') {
         const videoId = path.split('/')[4];
-        return handleSaveProgress(request, env, videoId);
+        return await handleSaveProgress(request, env, videoId);
       }
-      if (path === '/api/student/profile' && request.method === 'POST') return handleUpdateProfile(request, env);
-      if (path === '/api/student/password' && request.method === 'POST') return handleChangePassword(request, env);
-      if (path === '/api/student/notifications' && request.method === 'GET') return handleListNotifications(request, env);
-      if (path === '/api/student/notifications/read' && request.method === 'POST') return handleReadNotifications(request, env);
-      if (path === '/api/student/certificates' && request.method === 'GET') return handleListCertificates(request, env);
-      if (path === '/api/student/certificates/claim' && request.method === 'POST') return handleClaimCertificate(request, env);
+      if (path === '/api/student/profile' && request.method === 'POST') return await handleUpdateProfile(request, env);
+      if (path === '/api/student/password' && request.method === 'POST') return await handleChangePassword(request, env);
+      if (path === '/api/student/notifications' && request.method === 'GET') return await handleListNotifications(request, env);
+      if (path === '/api/student/notifications/read' && request.method === 'POST') return await handleReadNotifications(request, env);
+      if (path === '/api/student/certificates' && request.method === 'GET') return await handleListCertificates(request, env);
+      if (path === '/api/student/certificates/claim' && request.method === 'POST') return await handleClaimCertificate(request, env);
       if (path.match(/^\/api\/student\/certificates\/[^/]+$/) && request.method === 'GET') {
         const certId = path.split('/')[4];
-        return handleGetCertificate(request, env, certId);
+        return await handleGetCertificate(request, env, certId);
       }
 
       // ---------- Admin (password) ----------
-      if (path === '/api/admin/login' && request.method === 'POST') return handleAdminLogin(request, env);
-      if (path === '/api/admin/publish' && request.method === 'POST') return handlePublish(request, env);
-      if (path === '/api/admin/summary' && request.method === 'GET') return handleAdminSummary(request, env);
-      if (path === '/api/admin/notifications' && request.method === 'POST') return handleAdminSendNotification(request, env);
-      if (path === '/api/admin/notifications/broadcast' && request.method === 'POST') return handleAdminBroadcast(request, env);
-      if (path === '/api/admin/students' && request.method === 'GET') return handleListStudents(request, env);
-      if (path === '/api/admin/students/grant' && request.method === 'POST') return handleGrantCourse(request, env);
-      if (path === '/api/admin/students/revoke' && request.method === 'POST') return handleRevokeCourse(request, env);
-      if (path === '/api/admin/students/update' && request.method === 'POST') return handleUpdateStudent(request, env);
-      if (path === '/api/admin/students/delete' && request.method === 'POST') return handleDeleteStudent(request, env);
-      if (path === '/api/admin/courses' && request.method === 'GET') return handleListCourses(request, env);
-      if (path === '/api/admin/courses' && request.method === 'POST') return handleUpsertCourse(request, env);
-      if (path === '/api/admin/courses/delete' && request.method === 'POST') return handleDeleteCourse(request, env);
-      if (path === '/api/admin/courses/restore' && request.method === 'POST') return handleRestoreCourse(request, env);
-      if (path === '/api/admin/videos' && request.method === 'POST') return handleUpsertVideo(request, env);
-      if (path === '/api/admin/videos/delete' && request.method === 'POST') return handleDeleteVideo(request, env);
-      if (path === '/api/admin/videos/restore' && request.method === 'POST') return handleRestoreVideo(request, env);
-      if (path === '/api/admin/cloudinary/sign' && request.method === 'POST') return handleCloudinarySign(request, env);
-      if (path === '/api/admin/enrollments' && request.method === 'GET') return handleListEnrollments(request, env);
-      if (path === '/api/admin/enrollments/done' && request.method === 'POST') return handleEnrollmentDone(request, env);
-      if (path === '/api/admin/enrollments/delete' && request.method === 'POST') return handleEnrollmentDelete(request, env);
-      if (path === '/api/admin/orders' && request.method === 'GET') return handleListOrders(request, env);
-      if (path === '/api/admin/orders/done' && request.method === 'POST') return handleOrderDone(request, env);
-      if (path === '/api/admin/orders/delete' && request.method === 'POST') return handleOrderDelete(request, env);
+      if (path === '/api/admin/login' && request.method === 'POST') return await handleAdminLogin(request, env);
+      if (path === '/api/admin/publish' && request.method === 'POST') return await handlePublish(request, env);
+      if (path === '/api/admin/summary' && request.method === 'GET') return await handleAdminSummary(request, env);
+      if (path === '/api/admin/notifications' && request.method === 'POST') return await handleAdminSendNotification(request, env);
+      if (path === '/api/admin/notifications/broadcast' && request.method === 'POST') return await handleAdminBroadcast(request, env);
+      if (path === '/api/admin/students' && request.method === 'GET') return await handleListStudents(request, env);
+      if (path === '/api/admin/students/grant' && request.method === 'POST') return await handleGrantCourse(request, env);
+      if (path === '/api/admin/students/revoke' && request.method === 'POST') return await handleRevokeCourse(request, env);
+      if (path === '/api/admin/students/update' && request.method === 'POST') return await handleUpdateStudent(request, env);
+      if (path === '/api/admin/students/delete' && request.method === 'POST') return await handleDeleteStudent(request, env);
+      if (path === '/api/admin/courses' && request.method === 'GET') return await handleListCourses(request, env);
+      if (path === '/api/admin/courses' && request.method === 'POST') return await handleUpsertCourse(request, env);
+      if (path === '/api/admin/courses/delete' && request.method === 'POST') return await handleDeleteCourse(request, env);
+      if (path === '/api/admin/courses/restore' && request.method === 'POST') return await handleRestoreCourse(request, env);
+      if (path === '/api/admin/videos' && request.method === 'POST') return await handleUpsertVideo(request, env);
+      if (path === '/api/admin/videos/delete' && request.method === 'POST') return await handleDeleteVideo(request, env);
+      if (path === '/api/admin/videos/restore' && request.method === 'POST') return await handleRestoreVideo(request, env);
+      if (path === '/api/admin/cloudinary/sign' && request.method === 'POST') return await handleCloudinarySign(request, env);
+      if (path === '/api/admin/enrollments' && request.method === 'GET') return await handleListEnrollments(request, env);
+      if (path === '/api/admin/enrollments/done' && request.method === 'POST') return await handleEnrollmentDone(request, env);
+      if (path === '/api/admin/enrollments/delete' && request.method === 'POST') return await handleEnrollmentDelete(request, env);
+      if (path === '/api/admin/orders' && request.method === 'GET') return await handleListOrders(request, env);
+      if (path === '/api/admin/orders/done' && request.method === 'POST') return await handleOrderDone(request, env);
+      if (path === '/api/admin/orders/delete' && request.method === 'POST') return await handleOrderDelete(request, env);
 
       return json({ error: 'Not found' }, 404);
     } catch (err) {
       console.error(err);
       // Prefer pre-built Response (keeps CORS on 401/403 from requireStudent/requireAdmin)
-      if (err && err.response instanceof Response) return err.response;
-      const status = err && err.status ? err.status : 500;
+      if (err && err.response) return err.response;
+      const status = (err && err.status) || 500;
       return json({ error: (err && err.message) || 'Internal error' }, status);
     }
   },
@@ -1225,14 +1225,15 @@ async function handleListCourses(request, env) {
   const { results: courses } = await env.DB.prepare(`
     SELECT * FROM courses ORDER BY sort_order, title_pt
   `).all();
-  for (const c of courses) {
+  const list = courses || [];
+  for (const c of list) {
     const { results: videos } = await env.DB.prepare(`
       SELECT id, title_pt, title_en, cloudinary_public_id, duration_seconds, sort_order, active
       FROM videos WHERE course_id = ? ORDER BY sort_order
     `).bind(c.id).all();
-    c.videos = videos;
+    c.videos = videos || [];
   }
-  return json({ courses });
+  return json({ courses: list });
 }
 
 async function handleUpsertCourse(request, env) {

@@ -46,10 +46,22 @@
     }
     const token = getToken();
     if (token) headers['Authorization'] = 'Bearer ' + token;
-    const res = await fetch(API + path, { ...options, headers });
+    let res;
+    try {
+      res = await fetch(API + path, { ...options, headers });
+    } catch (netErr) {
+      const err = new Error(
+        'Sem ligação ao API (Failed to fetch). Confirme que o Worker está online: ' + API.replace(/\/api$/, '') + '/api/health'
+      );
+      err.status = 0;
+      throw err;
+    }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const err = new Error(data.error || 'Erro');
+      if (res.status === 401) {
+        clearToken();
+      }
+      const err = new Error(data.error || ('Erro HTTP ' + res.status));
       err.status = res.status;
       err.data = data;
       throw err;
