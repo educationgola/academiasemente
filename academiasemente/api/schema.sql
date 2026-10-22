@@ -165,3 +165,11 @@ CREATE TABLE IF NOT EXISTS certificates (
 );
 
 CREATE INDEX IF NOT EXISTS idx_certificates_user ON certificates(user_id);
+
+-- Website CMS (texts PT+EN, images, course prices, products, contact)
+-- One row per section; data_json holds the section payload.
+CREATE TABLE IF NOT EXISTS site_content (
+  section     TEXT PRIMARY KEY,               -- announce | hero | about | courses | products | contact | diff | images
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);

@@ -73,6 +73,10 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
           <span>Cursos</span>
         </button>
+        <button type="button" class="nav-btn" data-panel="website">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          <span>Website</span>
+        </button>
         <button type="button" class="nav-btn" data-panel="notify">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           <span>Avisos</span>
@@ -273,6 +277,31 @@
           </div>
         </section>
 
+        <!-- Website CMS -->
+        <section id="panel-website" class="panel" hidden>
+          <div class="panel-head">
+            <div class="panel-head-text">
+              <p class="panel-eyebrow">Conteúdo público</p>
+              <h2>Website</h2>
+            </div>
+            <p class="hint" id="websiteStatus" hidden></p>
+          </div>
+
+          <div class="site-tabs" id="siteTabs" role="tablist">
+            <button type="button" class="site-tab active" data-site-sec="hero">Hero</button>
+            <button type="button" class="site-tab" data-site-sec="announce">Barra</button>
+            <button type="button" class="site-tab" data-site-sec="about">Sobre</button>
+            <button type="button" class="site-tab" data-site-sec="courses">Cursos</button>
+            <button type="button" class="site-tab" data-site-sec="products">Produtos</button>
+            <button type="button" class="site-tab" data-site-sec="diff">Diferenciais</button>
+            <button type="button" class="site-tab" data-site-sec="contact">Contacto</button>
+          </div>
+
+          <div id="siteEditor" class="site-editor">
+            <p class="hint">A carregar conteúdo…</p>
+          </div>
+        </section>
+
         <!-- Guide -->
         <section id="panel-guide" class="panel" hidden>
           <div class="panel-head">
@@ -289,6 +318,7 @@
               <li>Use <strong>Revogar</strong> para retirar o acesso a um curso.</li>
               <li><strong>Editar / Eliminar</strong> — soft-delete esconde o curso ou vídeo dos alunos (não apaga os ficheiros de vídeo).</li>
               <li>O aluno vê os vídeos no dashboard; o sistema gera links assinados temporários.</li>
+              <li><strong>Website</strong> — textos PT/EN, preços, produtos, imagens (Cloudinary) e contacto.</li>
               <li><strong>Avisos</strong> — envie notificações a um aluno ou a todos os activos.</li>
               <li><strong>Certificados</strong> — emitidos automaticamente quando o aluno conclui 100% dos vídeos.</li>
             </ol>
@@ -318,6 +348,10 @@
       <button type="button" class="nav-btn" data-panel="courses">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
         <span>Cursos</span>
+      </button>
+      <button type="button" class="nav-btn" data-panel="website">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        <span>Site</span>
       </button>
       <button type="button" class="nav-btn" data-panel="notify">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>

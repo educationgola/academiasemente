@@ -1229,6 +1229,270 @@
     btn.addEventListener('click', function () { setLanguage(btn.dataset.lang); });
   });
 
+
+  // ---------- Site CMS (API) ----------
+  var siteData = null;
+  var cfg = window.ACADEMIA_CONFIG || {};
+  var SITE_API = (cfg.WORKER_URL || '').replace(/\/$/, '') + '/api/site';
+
+  function formatKz(n) {
+    return Number(n).toLocaleString('pt-AO');
+  }
+
+  function applySiteContent(site) {
+    if (!site) return;
+    siteData = site;
+
+    // Merge CMS texts into translations
+    function mergeLang(lang, map) {
+      if (!translations[lang]) return;
+      Object.keys(map).forEach(function (k) {
+        if (map[k] != null && map[k] !== '') translations[lang][k] = map[k];
+      });
+    }
+
+    if (site.announce) {
+      mergeLang('pt', { announce: site.announce.text_pt, announceAccent: site.announce.accent_pt });
+      mergeLang('en', { announce: site.announce.text_en, announceAccent: site.announce.accent_en });
+    }
+    if (site.hero) {
+      var h = site.hero;
+      mergeLang('pt', {
+        heroEyebrow: h.eyebrow_pt, heroTitle: h.title_pt, heroSubtitle: h.subtitle_pt,
+        heroCta: h.cta_pt, heroCta2: h.cta2_pt
+      });
+      mergeLang('en', {
+        heroEyebrow: h.eyebrow_en, heroTitle: h.title_en, heroSubtitle: h.subtitle_en,
+        heroCta: h.cta_en, heroCta2: h.cta2_en
+      });
+      if (h.image_url) {
+        var heroBg = document.querySelector('.hero-bg');
+        if (heroBg) heroBg.style.backgroundImage = 'url(' + h.image_url + ')';
+      }
+    }
+    if (site.about) {
+      var a = site.about;
+      mergeLang('pt', {
+        aboutEyebrow: a.eyebrow_pt, aboutTitle: a.title_pt, aboutP1: a.p1_pt, aboutP2: a.p2_pt, aboutP3: a.p3_pt,
+        missionTitle: a.mission_title_pt, missionText: a.mission_pt, visionTitle: a.vision_title_pt, visionText: a.vision_pt,
+        statStudents: a.stat_students_label_pt, statCenters: a.stat_centers_label_pt, statMonths: a.stat_months_label_pt, statAI: a.stat_ai_label_pt
+      });
+      mergeLang('en', {
+        aboutEyebrow: a.eyebrow_en, aboutTitle: a.title_en, aboutP1: a.p1_en, aboutP2: a.p2_en, aboutP3: a.p3_en,
+        missionTitle: a.mission_title_en, missionText: a.mission_en, visionTitle: a.vision_title_en, visionText: a.vision_en,
+        statStudents: a.stat_students_label_en, statCenters: a.stat_centers_label_en, statMonths: a.stat_months_label_en, statAI: a.stat_ai_label_en
+      });
+      // stat values (numbers)
+      var statNums = document.querySelectorAll('.stat-value');
+      if (statNums[0] && a.stat_students) statNums[0].textContent = a.stat_students;
+      if (statNums[1] && a.stat_centers) statNums[1].textContent = a.stat_centers;
+      if (statNums[2] && a.stat_months) statNums[2].textContent = a.stat_months;
+      if (statNums[3] && a.stat_ai) statNums[3].textContent = a.stat_ai;
+      if (a.image_url) {
+        var sobreBg = document.querySelector('.sobre-bg, .about-bg');
+        if (sobreBg) sobreBg.style.backgroundImage = 'url(' + a.image_url + ')';
+      }
+    }
+    if (site.courses) {
+      var c = site.courses;
+      mergeLang('pt', {
+        coursesEyebrow: c.eyebrow_pt, coursesTitle: c.title_pt, coursesDesc: c.desc_pt,
+        popular: c.popular_pt, enrollBtn: c.enroll_btn_pt, freeTest: c.free_test_pt,
+        schedulesTitle: c.schedules_title_pt, perMonth: c.per_month_pt || '/mês'
+      });
+      mergeLang('en', {
+        coursesEyebrow: c.eyebrow_en, coursesTitle: c.title_en, coursesDesc: c.desc_en,
+        popular: c.popular_en, enrollBtn: c.enroll_btn_en, freeTest: c.free_test_en,
+        schedulesTitle: c.schedules_title_en, perMonth: c.per_month_en || '/month'
+      });
+      // Update COURSE_PRICES and price cards
+      (c.modalities || []).forEach(function (m) {
+        if (m.id && m.price_kz != null) COURSE_PRICES[m.id] = Number(m.price_kz);
+        var card = document.querySelector('.price-card [data-course="' + m.id + '"]');
+        if (!card) card = document.querySelector('.enroll-btn[data-course="' + m.id + '"]');
+        var article = card ? card.closest('.price-card') : null;
+        if (!article) {
+          // try by order
+          return;
+        }
+        var valEl = article.querySelector('.price-amount .value');
+        if (valEl && m.price_kz != null) valEl.textContent = formatKz(m.price_kz);
+        if (m.icon_url) {
+          var icon = article.querySelector('.price-icon img');
+          if (icon) icon.src = m.icon_url;
+        }
+        var featList = article.querySelectorAll('.price-features li');
+        var feats = (currentLang === 'en' ? m.features_en : m.features_pt) || m.features_pt || [];
+        feats.forEach(function (f, i) {
+          if (featList[i]) featList[i].textContent = f;
+        });
+        // store features for lang switch
+        article.dataset.featuresPt = JSON.stringify(m.features_pt || []);
+        article.dataset.featuresEn = JSON.stringify(m.features_en || []);
+        if (m.title_pt) {
+          var h3 = article.querySelector('.price-header h3');
+          if (h3) {
+            h3.setAttribute('data-i18n', '');
+            h3.dataset.titlePt = m.title_pt;
+            h3.dataset.titleEn = m.title_en || m.title_pt;
+            h3.textContent = currentLang === 'en' ? (m.title_en || m.title_pt) : m.title_pt;
+          }
+        }
+      });
+      // Also map by index if data-course matching fails
+      var cards = document.querySelectorAll('.price-card');
+      (c.modalities || []).forEach(function (m, i) {
+        var article = cards[i];
+        if (!article) return;
+        var valEl = article.querySelector('.price-amount .value');
+        if (valEl && m.price_kz != null) valEl.textContent = formatKz(m.price_kz);
+        if (m.icon_url) {
+          var icon = article.querySelector('.price-icon img');
+          if (icon) icon.src = m.icon_url;
+        }
+        var featList = article.querySelectorAll('.price-features li');
+        var feats = m.features_pt || [];
+        feats.forEach(function (f, fi) {
+          if (featList[fi]) {
+            featList[fi].textContent = f;
+            featList[fi].dataset.featPt = (m.features_pt || [])[fi] || f;
+            featList[fi].dataset.featEn = (m.features_en || [])[fi] || f;
+          }
+        });
+        article.dataset.modId = m.id;
+        var enroll = article.querySelector('.enroll-btn');
+        if (enroll && m.id) {
+          enroll.dataset.course = m.id;
+          enroll.href = 'inscricao.html?course=' + encodeURIComponent(m.id);
+        }
+      });
+      if (typeof updateEnrollPrice === 'function') updateEnrollPrice();
+    }
+    if (site.products) {
+      var pr = site.products;
+      mergeLang('pt', { productsEyebrow: pr.eyebrow_pt, productsTitle: pr.title_pt, productsDesc: pr.desc_pt, buyBtn: pr.buy_btn_pt });
+      mergeLang('en', { productsEyebrow: pr.eyebrow_en, productsTitle: pr.title_en, productsDesc: pr.desc_en, buyBtn: pr.buy_btn_en });
+      (pr.items || []).forEach(function (item, i) {
+        var card = document.querySelector('.product-card[data-id="' + item.id + '"]');
+        if (!card) {
+          var all = document.querySelectorAll('.product-card');
+          card = all[i];
+        }
+        if (!card) return;
+        if (item.id) card.dataset.id = item.id;
+        if (item.name_pt) card.dataset.name = item.name_pt;
+        if (item.name_en) card.dataset.nameEn = item.name_en;
+        if (item.price_kz != null) card.dataset.price = String(item.price_kz);
+        var h3 = card.querySelector('h3');
+        if (h3 && item.name_pt) {
+          h3.textContent = currentLang === 'en' ? (item.name_en || item.name_pt) : item.name_pt;
+          h3.dataset.namePt = item.name_pt;
+          h3.dataset.nameEn = item.name_en || item.name_pt;
+        }
+        var desc = card.querySelector('.product-info p');
+        if (desc && item.desc_pt) {
+          desc.textContent = currentLang === 'en' ? (item.desc_en || item.desc_pt) : item.desc_pt;
+          desc.dataset.descPt = item.desc_pt;
+          desc.dataset.descEn = item.desc_en || item.desc_pt;
+        }
+        var priceEl = card.querySelector('.product-price .price');
+        if (priceEl && item.price_kz != null) priceEl.textContent = formatKz(item.price_kz) + ' Kz';
+        if (item.image_url) {
+          var img = card.querySelector('.product-image img');
+          if (img) img.src = item.image_url;
+          PRODUCT_IMAGES[item.id] = item.image_url;
+        }
+      });
+    }
+    if (site.diff) {
+      var d = site.diff;
+      mergeLang('pt', { diffEyebrow: d.eyebrow_pt, diffTitle: d.title_pt });
+      mergeLang('en', { diffEyebrow: d.eyebrow_en, diffTitle: d.title_en });
+      if (d.image_url) {
+        var diffBg = document.querySelector('.diferenciais-bg');
+        if (diffBg) diffBg.style.backgroundImage = 'url(' + d.image_url + ')';
+      }
+      var diffItems = document.querySelectorAll('.diff-item');
+      (d.items || []).forEach(function (it, i) {
+        var el = diffItems[i];
+        if (!el) return;
+        var t = el.querySelector('h3');
+        var p = el.querySelector('p');
+        if (t && it.title_pt) {
+          t.textContent = currentLang === 'en' ? (it.title_en || it.title_pt) : it.title_pt;
+          t.dataset.titlePt = it.title_pt;
+          t.dataset.titleEn = it.title_en || it.title_pt;
+        }
+        if (p && it.text_pt) {
+          p.textContent = currentLang === 'en' ? (it.text_en || it.text_pt) : it.text_pt;
+          p.dataset.textPt = it.text_pt;
+          p.dataset.textEn = it.text_en || it.text_pt;
+        }
+        if (it.icon_url) {
+          var icon = el.querySelector('.diff-icon img');
+          if (icon) icon.src = it.icon_url;
+        }
+      });
+    }
+    if (site.contact) {
+      var ct = site.contact;
+      mergeLang('pt', { contactEyebrow: ct.eyebrow_pt, contactTitle: ct.title_pt, contactDesc: ct.desc_pt });
+      mergeLang('en', { contactEyebrow: ct.eyebrow_en, contactTitle: ct.title_en, contactDesc: ct.desc_en });
+      if (ct.whatsapp) {
+        document.querySelectorAll('a[href*="wa.me"]').forEach(function (a) {
+          var text = a.href.indexOf('text=') >= 0 ? a.href.split('text=')[1] : '';
+          a.href = 'https://wa.me/' + ct.whatsapp + (text ? '?text=' + text : '');
+        });
+      }
+      if (ct.email) {
+        document.querySelectorAll('a[href^="mailto:"]').forEach(function (a) {
+          a.href = 'mailto:' + ct.email;
+          if (a.textContent.indexOf('@') >= 0) a.textContent = ct.email;
+        });
+      }
+      if (ct.image_url) {
+        var contactBg = document.querySelector('.contact-bg, .contacto-bg');
+        if (contactBg) contactBg.style.backgroundImage = 'url(' + ct.image_url + ')';
+      }
+    }
+
+    // Re-apply current language
+    setLanguage(currentLang);
+  }
+
+  function loadSiteContent() {
+    if (!SITE_API || SITE_API === '/api/site') return;
+    fetch(SITE_API)
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (data && data.site) applySiteContent(data.site);
+      })
+      .catch(function () { /* keep hardcoded defaults */ });
+  }
+
+  // Patch setLanguage to also refresh CMS-driven dynamic fields
+  var _setLanguage = setLanguage;
+  setLanguage = function (lang) {
+    _setLanguage(lang);
+    document.querySelectorAll('.price-features li[data-feat-pt]').forEach(function (li) {
+      li.textContent = lang === 'en' ? (li.dataset.featEn || li.dataset.featPt) : li.dataset.featPt;
+    });
+    document.querySelectorAll('.product-card h3[data-name-pt]').forEach(function (h) {
+      h.textContent = lang === 'en' ? (h.dataset.nameEn || h.dataset.namePt) : h.dataset.namePt;
+    });
+    document.querySelectorAll('.product-info p[data-desc-pt]').forEach(function (p) {
+      p.textContent = lang === 'en' ? (p.dataset.descEn || p.dataset.descPt) : p.dataset.descPt;
+    });
+    document.querySelectorAll('.diff-item h3[data-title-pt]').forEach(function (h) {
+      h.textContent = lang === 'en' ? (h.dataset.titleEn || h.dataset.titlePt) : h.dataset.titlePt;
+    });
+    document.querySelectorAll('.diff-item p[data-text-pt]').forEach(function (p) {
+      p.textContent = lang === 'en' ? (p.dataset.textEn || p.dataset.textPt) : p.dataset.textPt;
+    });
+  };
+
+  loadSiteContent();
+
   setLanguage('pt');
 
 })();

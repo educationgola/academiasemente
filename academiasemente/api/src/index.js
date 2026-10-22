@@ -25,6 +25,7 @@ export default {
     try {
       // ---------- Public ----------
       if (path === '/api/health') return json({ ok: true, ts: new Date().toISOString() });
+      if (path === '/api/site' && request.method === 'GET') return await handlePublicSite(request, env);
       if (path === '/api/enroll' && request.method === 'POST') return await handlePublicEnroll(request, env);
       if (path === '/api/orders' && request.method === 'POST') return await handlePublicOrder(request, env);
 
@@ -74,6 +75,8 @@ export default {
       if (path === '/api/admin/videos/delete' && request.method === 'POST') return await handleDeleteVideo(request, env);
       if (path === '/api/admin/videos/restore' && request.method === 'POST') return await handleRestoreVideo(request, env);
       if (path === '/api/admin/cloudinary/sign' && request.method === 'POST') return await handleCloudinarySign(request, env);
+      if (path === '/api/admin/site' && request.method === 'GET') return await handleAdminGetSite(request, env);
+      if (path === '/api/admin/site' && request.method === 'PUT') return await handleAdminPutSite(request, env);
       if (path === '/api/admin/enrollments' && request.method === 'GET') return await handleListEnrollments(request, env);
       if (path === '/api/admin/enrollments/done' && request.method === 'POST') return await handleEnrollmentDone(request, env);
       if (path === '/api/admin/enrollments/delete' && request.method === 'POST') return await handleEnrollmentDelete(request, env);
@@ -1391,8 +1394,9 @@ async function handleCloudinarySign(request, env) {
   let signParams;
 
   if (resourceType === 'image') {
-    // Public delivery so student dashboard <img> works without signed URLs
-    publicId = body.public_id || `${folder}/covers/${slug}`;
+    // Public delivery — covers, site images (hero, products, icons)
+    const subfolder = body.folder === 'site' ? 'site' : 'covers';
+    publicId = body.public_id || `${folder}/${subfolder}/${slug}`;
     type = 'upload';
     signParams = {
       public_id: publicId,
@@ -1428,6 +1432,374 @@ async function handleCloudinarySign(request, env) {
   });
 }
 
+// ==================== Website CMS ====================
+
+/** Default content — mirrors current hardcoded site (fallback if D1 empty). */
+const DEFAULT_SITE = {
+  announce: {
+    text_pt: 'Inscrições abertas',
+    text_en: 'Enrolment open',
+    accent_pt: 'Teste de nível gratuito',
+    accent_en: 'Free level test',
+  },
+  hero: {
+    eyebrow_pt: 'Formação em Inglês · Angola',
+    eyebrow_en: 'English Training · Angola',
+    title_pt: 'Aprenda inglês<br>para a vida real',
+    title_en: 'Learn English<br>for real life',
+    subtitle_pt:
+      'Metodologia exclusiva que transforma o português que você já fala em inglês fluente, em até 12 meses.',
+    subtitle_en:
+      'Exclusive methodology that turns the Portuguese you already speak into fluent English, in up to 12 months.',
+    cta_pt: 'Ver cursos',
+    cta_en: 'View courses',
+    cta2_pt: 'Falar no WhatsApp',
+    cta2_en: 'Chat on WhatsApp',
+    image_url: '',
+  },
+  about: {
+    eyebrow_pt: 'A Academia',
+    eyebrow_en: 'The Academy',
+    title_pt: 'Toda grande conquista<br>começa por uma semente',
+    title_en: 'Every great achievement<br>starts with a seed',
+    p1_pt:
+      'A Academia Semente nasceu da necessidade de preencher as lacunas no ensino de inglês em Angola e das dificuldades que falantes de português enfrentam ao aprender esta língua.',
+    p1_en:
+      'Academia Semente was born from the need to fill gaps in English teaching in Angola and the difficulties Portuguese speakers face when learning the language.',
+    p2_pt:
+      'Utilizamos uma metodologia exclusiva, uma reformulação ideológica que funciona como ponte mental, para que o aluno consiga reproduzir tudo o que fala em português para inglês por meio de padrões e passe a pensar apenas em inglês.',
+    p2_en:
+      'We use an exclusive methodology — an ideological reformulation that works as a mental bridge — so students can turn everything they say in Portuguese into English through patterns and start thinking only in English.',
+    p3_pt:
+      'Foco em empregabilidade e vida real: o mercado não quer aluno que tira 20 na prova e trava na entrevista.',
+    p3_en:
+      'Focus on employability and real life: the market does not want a student who scores 20 on a test and freezes in an interview.',
+    mission_title_pt: 'Missão',
+    mission_title_en: 'Mission',
+    mission_pt:
+      'Formar angolanos comunicativos, empregáveis e confiantes em inglês, em até 12 meses, usando tecnologia e prática real.',
+    mission_en:
+      'Train communicative, employable and confident Angolans in English within 12 months, using technology and real practice.',
+    vision_title_pt: 'Visão',
+    vision_title_en: 'Vision',
+    vision_pt:
+      'Ser o centro de inglês de referência em Angola que forma líderes bilingues, conectando angolanos a oportunidades globais.',
+    vision_en:
+      'To be the reference English centre in Angola that trains bilingual leaders, connecting Angolans to global opportunities.',
+    stat_students: '500+',
+    stat_students_label_pt: 'Alunos formados',
+    stat_students_label_en: 'Students trained',
+    stat_centers: '1',
+    stat_centers_label_pt: 'Centros em Angola',
+    stat_centers_label_en: 'Centres in Angola',
+    stat_months: '12',
+    stat_months_label_pt: 'Meses para fluência',
+    stat_months_label_en: 'Months to fluency',
+    stat_ai: '24h',
+    stat_ai_label_pt: 'IA de apoio',
+    stat_ai_label_en: 'AI support',
+    image_url: '',
+  },
+  courses: {
+    eyebrow_pt: 'Modalidades',
+    eyebrow_en: 'Formats',
+    title_pt: 'Escolha o formato<br>que se adapta a si',
+    title_en: 'Choose the format<br>that fits you',
+    desc_pt:
+      'Aulas presenciais, online ou ao domicílio. Todas com a mesma metodologia exclusiva e acompanhamento individual.',
+    desc_en:
+      'In-person, online or home lessons. All with the same exclusive methodology and individual support.',
+    popular_pt: 'Mais escolhido',
+    popular_en: 'Most popular',
+    enroll_btn_pt: 'Inscrever-me',
+    enroll_btn_en: 'Enrol',
+    per_month_pt: '/mês',
+    per_month_en: '/month',
+    free_test_pt: 'Teste de nível gratuito · Sem compromisso',
+    free_test_en: 'Free level test · No commitment',
+    schedules_title_pt: 'Horários disponíveis',
+    schedules_title_en: 'Available schedules',
+    modalities: [
+      {
+        id: 'Online',
+        title_pt: 'Online',
+        title_en: 'Online',
+        tag_pt: 'Flexível',
+        tag_en: 'Flexible',
+        price_kz: 10525,
+        featured: false,
+        icon_url: '',
+        features_pt: [
+          'Aulas individualizadas',
+          'Estude a qualquer hora e em qualquer lugar',
+          'Método por etapas para evolução garantida',
+          'IA de apoio 24 horas',
+          'Feedback mensal em vídeo',
+        ],
+        features_en: [
+          'Individual lessons',
+          'Study anytime, anywhere',
+          'Step-by-step method for guaranteed progress',
+          '24h AI support',
+          'Monthly video feedback',
+        ],
+      },
+      {
+        id: 'Presencial',
+        title_pt: 'Presencial',
+        title_en: 'In-person',
+        tag_pt: 'Híbrido',
+        tag_en: 'Hybrid',
+        price_kz: 15225,
+        featured: true,
+        icon_url: '',
+        features_pt: [
+          'Aulas diretas e interativas',
+          'Ambiente de aprendizagem focado',
+          '3 dias presenciais + 2 online',
+          'Eventos reais (English Day, debates)',
+          'Comunidade WhatsApp só em inglês',
+        ],
+        features_en: [
+          'Live interactive classes',
+          'Focused learning environment',
+          '3 in-person + 2 online days',
+          'Real events (English Day, debates)',
+          'English-only WhatsApp community',
+        ],
+      },
+      {
+        id: 'Domiciliar',
+        title_pt: 'Domiciliar',
+        title_en: 'Home lessons',
+        tag_pt: 'Premium',
+        tag_en: 'Premium',
+        price_kz: 100000,
+        featured: false,
+        icon_url: '',
+        features_pt: [
+          'Atenção 100% focada no aluno',
+          'Professor desloca-se até si',
+          'Horário completamente flexível',
+          'Plano de estudos personalizado',
+          'Acompanhamento intensivo',
+        ],
+        features_en: [
+          '100% focused attention',
+          'Teacher comes to you',
+          'Fully flexible schedule',
+          'Personalised study plan',
+          'Intensive support',
+        ],
+      },
+    ],
+    schedules: [
+      { time: '08h - 10h', label_pt: 'Manhã', label_en: 'Morning' },
+      { time: '14h - 16h', label_pt: 'Tarde', label_en: 'Afternoon' },
+    ],
+  },
+  products: {
+    eyebrow_pt: 'Loja',
+    eyebrow_en: 'Shop',
+    title_pt: 'Materiais e produtos<br>oficiais',
+    title_en: 'Official materials<br>& products',
+    desc_pt: 'Leve a Academia Semente consigo. Materiais pensados para acelerar a sua evolução.',
+    desc_en: 'Take Academia Semente with you. Materials designed to accelerate your progress.',
+    buy_btn_pt: 'Adicionar',
+    buy_btn_en: 'Add',
+    items: [
+      {
+        id: 'caderno',
+        name_pt: 'Caderno de Padrões',
+        name_en: 'Patterns Notebook',
+        desc_pt: 'Caderno exclusivo com os padrões da metodologia Semente para prática diária.',
+        desc_en: 'Exclusive notebook with Semente methodology patterns for daily practice.',
+        price_kz: 8500,
+        image_url: '',
+        images: [],
+      },
+      {
+        id: 'polo',
+        name_pt: 'Polo Oficial',
+        name_en: 'Official Polo',
+        desc_pt: 'Polo premium de manga comprida com o logotipo Academia Semente. Acabamento profissional.',
+        desc_en: 'Premium long-sleeve polo with the Academia Semente logo. Professional finish.',
+        price_kz: 12000,
+        image_url: '',
+        images: [],
+      },
+      {
+        id: 'canetas',
+        name_pt: 'Kit Canetas Semente',
+        name_en: 'Semente Pen Kit',
+        desc_pt: 'Conjunto de 3 canetas premium com a marca Academia Semente.',
+        desc_en: 'Set of 3 premium pens with the Academia Semente brand.',
+        price_kz: 3500,
+        image_url: '',
+        images: [],
+      },
+      {
+        id: 'manual',
+        name_pt: 'Manual do Aluno',
+        name_en: 'Student Manual',
+        desc_pt: 'Guia completo da metodologia Semente com exercícios e padrões avançados.',
+        desc_en: 'Complete Semente methodology guide with exercises and advanced patterns.',
+        price_kz: 15000,
+        image_url: '',
+        images: [],
+      },
+    ],
+  },
+  diff: {
+    eyebrow_pt: 'Porquê nós',
+    eyebrow_en: 'Why us',
+    title_pt: 'O que nos torna<br>diferentes',
+    title_en: 'What makes us<br>different',
+    items: [
+      {
+        title_pt: 'Metodologia exclusiva',
+        title_en: 'Exclusive methodology',
+        text_pt: 'Ponte mental que permite pensar directamente em inglês a partir do português.',
+        text_en: 'Mental bridge that lets you think directly in English from Portuguese.',
+        icon_url: '',
+      },
+      {
+        title_pt: 'Foco em empregabilidade',
+        title_en: 'Employability focus',
+        text_pt: 'Entrevistas, e-mails corporativos e atendimento ao cliente, inglês para o mercado.',
+        text_en: 'Interviews, corporate emails and customer service — English for the market.',
+        icon_url: '',
+      },
+      {
+        title_pt: 'Tecnologia + humano',
+        title_en: 'Tech + human',
+        text_pt: 'IA 24h para prática + professor como coach de comunicação.',
+        text_en: '24h AI for practice + teacher as communication coach.',
+        icon_url: '',
+      },
+      {
+        title_pt: 'Ambiente sem julgamento',
+        title_en: 'Judgement-free space',
+        text_pt: 'Sala onde errar é normal. Quebramos o medo de falar.',
+        text_en: 'A room where mistakes are normal. We break the fear of speaking.',
+        icon_url: '',
+      },
+    ],
+    image_url: '',
+  },
+  contact: {
+    eyebrow_pt: 'Contacto',
+    eyebrow_en: 'Contact',
+    title_pt: 'Fale connosco',
+    title_en: 'Get in touch',
+    desc_pt:
+      'Envie-nos uma mensagem. Respondemos rapidamente via WhatsApp. Para se inscrever num curso, use a página de inscrição.',
+    desc_en:
+      'Send us a message. We reply quickly via WhatsApp. To enrol in a course, use the enrolment page.',
+    whatsapp: '244945574700',
+    email: 'academiasemente@gmail.com',
+    address: 'Kilamba, Ed R29, Andar 6, Ap 63, Luanda, Angola',
+    instagram: 'https://www.instagram.com/academiasemente',
+    facebook: 'https://www.facebook.com/profile.php?id=61584786747541',
+    image_url: '',
+  },
+};
+
+const SITE_SECTIONS = ['announce', 'hero', 'about', 'courses', 'products', 'diff', 'contact'];
+
+function deepMerge(base, over) {
+  if (!over || typeof over !== 'object') return base;
+  const out = Array.isArray(base) ? base.slice() : { ...base };
+  for (const k of Object.keys(over)) {
+    if (over[k] && typeof over[k] === 'object' && !Array.isArray(over[k]) && base && typeof base[k] === 'object' && !Array.isArray(base[k])) {
+      out[k] = deepMerge(base[k], over[k]);
+    } else if (over[k] !== undefined) {
+      out[k] = over[k];
+    }
+  }
+  return out;
+}
+
+async function loadSiteFromDb(env) {
+  const site = JSON.parse(JSON.stringify(DEFAULT_SITE));
+  if (!env.DB) return site;
+  try {
+    const { results } = await env.DB.prepare('SELECT section, data_json FROM site_content').all();
+    if (!results || !results.length) return site;
+    for (const row of results) {
+      if (!SITE_SECTIONS.includes(row.section)) continue;
+      let parsed;
+      try {
+        parsed = JSON.parse(row.data_json || '{}');
+      } catch {
+        continue;
+      }
+      site[row.section] = deepMerge(site[row.section] || {}, parsed);
+    }
+  } catch {
+    // table may not exist yet
+  }
+  return site;
+}
+
+async function handlePublicSite(_request, env) {
+  const site = await loadSiteFromDb(env);
+  return json({ site, updated_at: new Date().toISOString() });
+}
+
+async function handleAdminGetSite(request, env) {
+  await requireAdmin(request, env);
+  const site = await loadSiteFromDb(env);
+  return json({ site });
+}
+
+async function handleAdminPutSite(request, env) {
+  await requireAdmin(request, env);
+  if (!env.DB) return json({ error: 'Database not configured' }, 500);
+  const body = await readBody(request);
+  const section = String(body.section || '').trim();
+  if (!SITE_SECTIONS.includes(section)) {
+    return json({ error: 'Secção inválida. Use: ' + SITE_SECTIONS.join(', ') }, 400);
+  }
+  if (!body.data || typeof body.data !== 'object') {
+    return json({ error: 'data (object) é obrigatório.' }, 400);
+  }
+  // Merge with defaults so partial updates keep missing keys
+  const merged = deepMerge(DEFAULT_SITE[section] || {}, body.data);
+  await env.DB.prepare(
+    `INSERT INTO site_content (section, data_json, updated_at)
+     VALUES (?, ?, datetime('now'))
+     ON CONFLICT(section) DO UPDATE SET data_json = excluded.data_json, updated_at = datetime('now')`
+  )
+    .bind(section, JSON.stringify(merged))
+    .run();
+  return json({ ok: true, section, data: merged });
+}
+
+/** Course prices from CMS (fallback to hardcoded). */
+async function getCoursePricesKz(env) {
+  const fallback = {
+    Online: 10525,
+    Presencial: 15225,
+    Domiciliar: 100000,
+    'Teste de nível': 0,
+  };
+  try {
+    const site = await loadSiteFromDb(env);
+    const mods = (site.courses && site.courses.modalities) || [];
+    const prices = { ...fallback };
+    for (const m of mods) {
+      if (m && m.id && Number.isFinite(Number(m.price_kz))) {
+        prices[m.id] = Number(m.price_kz);
+      }
+    }
+    prices['Teste de nível'] = 0;
+    return prices;
+  } catch {
+    return fallback;
+  }
+}
+
 // ==================== Enrolments (Inscrições) ====================
 
 const COURSE_PRICES_KZ = {
@@ -1452,14 +1824,16 @@ async function handlePublicEnroll(request, env) {
   if (!name || name.length < 2) return json({ error: 'Nome é obrigatório.' }, 400);
   if (!email || !email.includes('@')) return json({ error: 'E-mail inválido.' }, 400);
   if (!phone) return json({ error: 'Telefone / WhatsApp é obrigatório.' }, 400);
-  if (!course || !(course in COURSE_PRICES_KZ)) {
+
+  const COURSE_PRICES = await getCoursePricesKz(env);
+  if (!course || !(course in COURSE_PRICES)) {
     return json({ error: 'Curso inválido.' }, 400);
   }
   if (!PAYMENT_METHODS.includes(payment_method)) {
     return json({ error: 'Escolha um método de pagamento válido.' }, 400);
   }
 
-  const amount_kz = COURSE_PRICES_KZ[course];
+  const amount_kz = COURSE_PRICES[course];
   const id = uuid();
   const age = body.age != null && body.age !== '' ? Number(body.age) : null;
 

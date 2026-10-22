@@ -123,6 +123,7 @@
     enrollments: 'Inscrições',
     orders: 'Encomendas',
     courses: 'Cursos',
+    website: 'Website',
     notify: 'Avisos',
     guide: 'Guia',
   };
@@ -142,6 +143,7 @@
     if (panel === 'students') loadStudents();
     if (panel === 'courses') loadCourses();
     if (panel === 'notify') populateNotifyUsers();
+    if (panel === 'website') loadWebsite();
   }
 
   document.querySelectorAll('.nav-btn').forEach((btn) => {
@@ -1421,6 +1423,354 @@
       }
     });
   }
+
+  // —— Website CMS ——
+  let siteCache = null;
+  let siteSec = 'hero';
+
+  function siteStatus(msg, ok) {
+    const el = document.getElementById('websiteStatus');
+    if (!el) return;
+    el.hidden = !msg;
+    el.textContent = msg || '';
+    el.className = 'hint ' + (ok ? 'success-hint' : 'error-hint');
+  }
+
+  function fieldPair(labelPt, labelEn, namePt, nameEn, valPt, valEn, rows) {
+    const ta = !!rows;
+    if (ta) {
+      return (
+        '<div class="bilingual">' +
+        '<div><label>' + esc(labelPt) + '</label><textarea data-k="' + esc(namePt) + '" rows="' + rows + '">' + esc(valPt || '') + '</textarea></div>' +
+        '<div><label>' + esc(labelEn) + '</label><textarea data-k="' + esc(nameEn) + '" rows="' + rows + '">' + esc(valEn || '') + '</textarea></div>' +
+        '</div>'
+      );
+    }
+    return (
+      '<div class="bilingual">' +
+      '<div><label>' + esc(labelPt) + '</label><input type="text" data-k="' + esc(namePt) + '" value="' + esc(valPt || '') + '"></div>' +
+      '<div><label>' + esc(labelEn) + '</label><input type="text" data-k="' + esc(nameEn) + '" value="' + esc(valEn || '') + '"></div>' +
+      '</div>'
+    );
+  }
+
+  function imgField(label, key, url, keyAttr) {
+    const attr = keyAttr || 'data-k';
+    return (
+      '<div><label>' + esc(label) + '</label>' +
+      '<div class="img-row">' +
+      (url
+        ? '<img class="img-preview" src="' + esc(url) + '" alt="">'
+        : '<div class="img-preview" style="display:flex;align-items:center;justify-content:center;font-size:11px;color:#999">—</div>') +
+      '<input type="url" ' + attr + '="' + esc(key) + '" value="' + esc(url || '') + '" placeholder="URL Cloudinary ou assets/…">' +
+      '<label class="btn btn-outline" style="margin:0;cursor:pointer">Upload' +
+      '<input type="file" accept="image/*" data-upload-target hidden></label></div></div>'
+    );
+  }
+
+  function collectForm(root) {
+    const data = {};
+    root.querySelectorAll('[data-k]').forEach(function (el) {
+      const k = el.getAttribute('data-k');
+      if (k) data[k] = el.value;
+    });
+    return data;
+  }
+
+  async function uploadSiteImage(file, targetInput) {
+    siteStatus('A enviar imagem…', true);
+    const sign = await api('/admin/cloudinary/sign', {
+      method: 'POST',
+      body: JSON.stringify({
+        resource_type: 'image',
+        folder: 'site',
+        slug: 'img-' + Date.now().toString(36),
+      }),
+    });
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('api_key', sign.api_key);
+    fd.append('timestamp', sign.timestamp);
+    fd.append('signature', sign.signature);
+    fd.append('public_id', sign.public_id);
+    const up = await fetch(sign.upload_url, { method: 'POST', body: fd });
+    const result = await up.json();
+    if (!up.ok) throw new Error((result.error && result.error.message) || 'Falha no upload Cloudinary');
+    const url = result.secure_url || result.url;
+    if (targetInput) {
+      targetInput.value = url;
+      const row = targetInput.closest('.img-row');
+      if (row) {
+        var img = row.querySelector('img.img-preview');
+        if (!img) {
+          img = document.createElement('img');
+          img.className = 'img-preview';
+          row.insertBefore(img, row.firstChild);
+          var ph = row.querySelector('div.img-preview');
+          if (ph) ph.remove();
+        }
+        img.src = url;
+      }
+    }
+    siteStatus('Imagem enviada.', true);
+    return url;
+  }
+
+  function wireUploads(editor) {
+    editor.querySelectorAll('input[type="file"][data-upload-target]').forEach(function (inp) {
+      inp.addEventListener('change', async function () {
+        if (!inp.files || !inp.files[0]) return;
+        var row = inp.closest('.img-row');
+        var target = row && row.querySelector('input[type="url"]');
+        try {
+          await uploadSiteImage(inp.files[0], target);
+        } catch (err) {
+          siteStatus(err.message || 'Erro no upload', false);
+        }
+        inp.value = '';
+      });
+    });
+  }
+
+  function renderSiteSection() {
+    const editor = document.getElementById('siteEditor');
+    if (!editor || !siteCache) return;
+    const s = siteCache[siteSec] || {};
+    let html = '';
+
+    if (siteSec === 'announce') {
+      html += '<div class="form-section">';
+      html += fieldPair('Texto PT', 'Texto EN', 'text_pt', 'text_en', s.text_pt, s.text_en);
+      html += fieldPair('Destaque PT', 'Destaque EN', 'accent_pt', 'accent_en', s.accent_pt, s.accent_en);
+      html += '</div>';
+    }
+
+    if (siteSec === 'hero') {
+      html += '<div class="form-section">';
+      html += fieldPair('Eyebrow PT', 'Eyebrow EN', 'eyebrow_pt', 'eyebrow_en', s.eyebrow_pt, s.eyebrow_en);
+      html += fieldPair('Título PT (pode usar <br>)', 'Título EN', 'title_pt', 'title_en', s.title_pt, s.title_en, 2);
+      html += fieldPair('Subtítulo PT', 'Subtítulo EN', 'subtitle_pt', 'subtitle_en', s.subtitle_pt, s.subtitle_en, 3);
+      html += fieldPair('Botão 1 PT', 'Botão 1 EN', 'cta_pt', 'cta_en', s.cta_pt, s.cta_en);
+      html += fieldPair('Botão 2 PT', 'Botão 2 EN', 'cta2_pt', 'cta2_en', s.cta2_pt, s.cta2_en);
+      html += imgField('Imagem de fundo (Hero)', 'image_url', s.image_url);
+      html += '</div>';
+    }
+
+    if (siteSec === 'about') {
+      html += '<div class="form-section">';
+      html += fieldPair('Eyebrow PT', 'Eyebrow EN', 'eyebrow_pt', 'eyebrow_en', s.eyebrow_pt, s.eyebrow_en);
+      html += fieldPair('Título PT', 'Título EN', 'title_pt', 'title_en', s.title_pt, s.title_en, 2);
+      html += fieldPair('Parágrafo 1 PT', 'Parágrafo 1 EN', 'p1_pt', 'p1_en', s.p1_pt, s.p1_en, 3);
+      html += fieldPair('Parágrafo 2 PT', 'Parágrafo 2 EN', 'p2_pt', 'p2_en', s.p2_pt, s.p2_en, 3);
+      html += fieldPair('Parágrafo 3 PT', 'Parágrafo 3 EN', 'p3_pt', 'p3_en', s.p3_pt, s.p3_en, 2);
+      html += fieldPair('Missão título PT', 'Missão título EN', 'mission_title_pt', 'mission_title_en', s.mission_title_pt, s.mission_title_en);
+      html += fieldPair('Missão PT', 'Missão EN', 'mission_pt', 'mission_en', s.mission_pt, s.mission_en, 2);
+      html += fieldPair('Visão título PT', 'Visão título EN', 'vision_title_pt', 'vision_title_en', s.vision_title_pt, s.vision_title_en);
+      html += fieldPair('Visão PT', 'Visão EN', 'vision_pt', 'vision_en', s.vision_pt, s.vision_en, 2);
+      html += '<div class="bilingual"><div><label>Stat alunos (valor)</label><input type="text" data-k="stat_students" value="' + esc(s.stat_students || '') + '"></div>';
+      html += '<div><label>Stat centros</label><input type="text" data-k="stat_centers" value="' + esc(s.stat_centers || '') + '"></div></div>';
+      html += '<div class="bilingual"><div><label>Stat meses</label><input type="text" data-k="stat_months" value="' + esc(s.stat_months || '') + '"></div>';
+      html += '<div><label>Stat IA</label><input type="text" data-k="stat_ai" value="' + esc(s.stat_ai || '') + '"></div></div>';
+      html += fieldPair('Label alunos PT', 'Label alunos EN', 'stat_students_label_pt', 'stat_students_label_en', s.stat_students_label_pt, s.stat_students_label_en);
+      html += imgField('Imagem Sobre', 'image_url', s.image_url);
+      html += '</div>';
+    }
+
+    if (siteSec === 'courses') {
+      html += '<div class="form-section">';
+      html += fieldPair('Eyebrow PT', 'Eyebrow EN', 'eyebrow_pt', 'eyebrow_en', s.eyebrow_pt, s.eyebrow_en);
+      html += fieldPair('Título PT', 'Título EN', 'title_pt', 'title_en', s.title_pt, s.title_en, 2);
+      html += fieldPair('Descrição PT', 'Descrição EN', 'desc_pt', 'desc_en', s.desc_pt, s.desc_en, 2);
+      html += fieldPair('Badge popular PT', 'Badge EN', 'popular_pt', 'popular_en', s.popular_pt, s.popular_en);
+      html += fieldPair('Botão inscrição PT', 'Botão EN', 'enroll_btn_pt', 'enroll_btn_en', s.enroll_btn_pt, s.enroll_btn_en);
+      html += fieldPair('Teste gratuito PT', 'Teste EN', 'free_test_pt', 'free_test_en', s.free_test_pt, s.free_test_en);
+      html += fieldPair('Título horários PT', 'Título EN', 'schedules_title_pt', 'schedules_title_en', s.schedules_title_pt, s.schedules_title_en);
+      html += '</div>';
+      (s.modalities || []).forEach(function (m, i) {
+        html += '<div class="modality-card" data-mod-i="' + i + '">';
+        html += '<h4>' + esc(m.id || ('Modalidade ' + (i + 1))) + (m.featured ? ' · em destaque' : '') + '</h4>';
+        html += '<input type="hidden" data-mod-k="id" value="' + esc(m.id || '') + '">';
+        html += '<div class="bilingual"><div><label>Título PT</label><input type="text" data-mod-k="title_pt" value="' + esc(m.title_pt || '') + '"></div>';
+        html += '<div><label>Título EN</label><input type="text" data-mod-k="title_en" value="' + esc(m.title_en || '') + '"></div></div>';
+        html += '<div class="bilingual"><div><label>Tag PT</label><input type="text" data-mod-k="tag_pt" value="' + esc(m.tag_pt || '') + '"></div>';
+        html += '<div><label>Tag EN</label><input type="text" data-mod-k="tag_en" value="' + esc(m.tag_en || '') + '"></div></div>';
+        html += '<div class="bilingual"><div><label>Preço (Kz/mês)</label><input type="number" data-mod-k="price_kz" value="' + esc(String(m.price_kz != null ? m.price_kz : '')) + '"></div>';
+        html += '<div><label>Destaque</label><select data-mod-k="featured"><option value="0"' + (!m.featured ? ' selected' : '') + '>Não</option><option value="1"' + (m.featured ? ' selected' : '') + '>Sim</option></select></div></div>';
+        html += '<div class="features-list bilingual"><div><label>Features PT (1 por linha)</label><textarea data-mod-k="features_pt" rows="5">' + esc((m.features_pt || []).join('\n')) + '</textarea></div>';
+        html += '<div><label>Features EN (1 por linha)</label><textarea data-mod-k="features_en" rows="5">' + esc((m.features_en || []).join('\n')) + '</textarea></div></div>';
+        html += imgField('Ícone', 'icon_url', m.icon_url, 'data-mod-k');
+        html += '</div>';
+      });
+      html += '<div class="form-section"><h4 style="margin:0 0 0.75rem;font-size:0.9375rem">Horários</h4>';
+      (s.schedules || []).forEach(function (sch, i) {
+        html += '<div class="bilingual" data-sch-i="' + i + '"><div><label>Hora</label><input type="text" data-sch-k="time" value="' + esc(sch.time || '') + '"></div>';
+        html += '<div><label>Label PT</label><input type="text" data-sch-k="label_pt" value="' + esc(sch.label_pt || '') + '"></div>';
+        html += '<div><label>Label EN</label><input type="text" data-sch-k="label_en" value="' + esc(sch.label_en || '') + '"></div></div>';
+      });
+      html += '</div>';
+    }
+
+    if (siteSec === 'products') {
+      html += '<div class="form-section">';
+      html += fieldPair('Eyebrow PT', 'Eyebrow EN', 'eyebrow_pt', 'eyebrow_en', s.eyebrow_pt, s.eyebrow_en);
+      html += fieldPair('Título PT', 'Título EN', 'title_pt', 'title_en', s.title_pt, s.title_en, 2);
+      html += fieldPair('Descrição PT', 'Descrição EN', 'desc_pt', 'desc_en', s.desc_pt, s.desc_en, 2);
+      html += fieldPair('Botão PT', 'Botão EN', 'buy_btn_pt', 'buy_btn_en', s.buy_btn_pt, s.buy_btn_en);
+      html += '</div>';
+      (s.items || []).forEach(function (p, i) {
+        html += '<div class="product-edit-card" data-prod-i="' + i + '">';
+        html += '<h4>' + esc(p.name_pt || p.id || 'Produto') + '</h4>';
+        html += '<input type="hidden" data-prod-k="id" value="' + esc(p.id || '') + '">';
+        html += '<div class="bilingual"><div><label>Nome PT</label><input type="text" data-prod-k="name_pt" value="' + esc(p.name_pt || '') + '"></div>';
+        html += '<div><label>Nome EN</label><input type="text" data-prod-k="name_en" value="' + esc(p.name_en || '') + '"></div></div>';
+        html += '<div class="bilingual"><div><label>Desc PT</label><textarea data-prod-k="desc_pt" rows="2">' + esc(p.desc_pt || '') + '</textarea></div>';
+        html += '<div><label>Desc EN</label><textarea data-prod-k="desc_en" rows="2">' + esc(p.desc_en || '') + '</textarea></div></div>';
+        html += '<div><label>Preço (Kz)</label><input type="number" data-prod-k="price_kz" value="' + esc(String(p.price_kz != null ? p.price_kz : '')) + '"></div>';
+        html += imgField('Imagem principal', 'image_url', p.image_url, 'data-prod-k');
+        html += '</div>';
+      });
+    }
+
+    if (siteSec === 'diff') {
+      html += '<div class="form-section">';
+      html += fieldPair('Eyebrow PT', 'Eyebrow EN', 'eyebrow_pt', 'eyebrow_en', s.eyebrow_pt, s.eyebrow_en);
+      html += fieldPair('Título PT', 'Título EN', 'title_pt', 'title_en', s.title_pt, s.title_en, 2);
+      html += imgField('Imagem de fundo', 'image_url', s.image_url);
+      html += '</div>';
+      (s.items || []).forEach(function (d, i) {
+        html += '<div class="diff-edit-card" data-diff-i="' + i + '">';
+        html += '<h4>Item ' + (i + 1) + '</h4>';
+        html += '<div class="bilingual"><div><label>Título PT</label><input type="text" data-diff-k="title_pt" value="' + esc(d.title_pt || '') + '"></div>';
+        html += '<div><label>Título EN</label><input type="text" data-diff-k="title_en" value="' + esc(d.title_en || '') + '"></div></div>';
+        html += '<div class="bilingual"><div><label>Texto PT</label><textarea data-diff-k="text_pt" rows="2">' + esc(d.text_pt || '') + '</textarea></div>';
+        html += '<div><label>Texto EN</label><textarea data-diff-k="text_en" rows="2">' + esc(d.text_en || '') + '</textarea></div></div>';
+        html += imgField('Ícone', 'icon_url', d.icon_url, 'data-diff-k');
+        html += '</div>';
+      });
+    }
+
+    if (siteSec === 'contact') {
+      html += '<div class="form-section">';
+      html += fieldPair('Eyebrow PT', 'Eyebrow EN', 'eyebrow_pt', 'eyebrow_en', s.eyebrow_pt, s.eyebrow_en);
+      html += fieldPair('Título PT', 'Título EN', 'title_pt', 'title_en', s.title_pt, s.title_en);
+      html += fieldPair('Descrição PT', 'Descrição EN', 'desc_pt', 'desc_en', s.desc_pt, s.desc_en, 3);
+      html += '<div><label>WhatsApp (só dígitos, ex: 244945574700)</label><input type="text" data-k="whatsapp" value="' + esc(s.whatsapp || '') + '"></div>';
+      html += '<div><label>Email</label><input type="email" data-k="email" value="' + esc(s.email || '') + '"></div>';
+      html += '<div><label>Morada</label><input type="text" data-k="address" value="' + esc(s.address || '') + '"></div>';
+      html += '<div><label>Instagram URL</label><input type="url" data-k="instagram" value="' + esc(s.instagram || '') + '"></div>';
+      html += '<div><label>Facebook URL</label><input type="url" data-k="facebook" value="' + esc(s.facebook || '') + '"></div>';
+      html += imgField('Imagem de fundo Contacto', 'image_url', s.image_url);
+      html += '</div>';
+    }
+
+    html += '<div class="save-bar"><button type="button" class="btn" id="siteSaveBtn">Guardar secção</button>' +
+      '<span class="hint-inline">Grava só esta secção. O site público actualiza de imediato.</span></div>';
+
+    editor.innerHTML = html;
+    wireUploads(editor);
+    var saveBtn = document.getElementById('siteSaveBtn');
+    if (saveBtn) saveBtn.addEventListener('click', saveSiteSection);
+  }
+
+  function buildSectionPayload() {
+    const editor = document.getElementById('siteEditor');
+    const base = collectForm(editor);
+    const prev = (siteCache && siteCache[siteSec]) || {};
+
+    if (siteSec === 'courses') {
+      const modalities = [];
+      editor.querySelectorAll('.modality-card').forEach(function (card) {
+        const m = {};
+        card.querySelectorAll('[data-mod-k]').forEach(function (el) {
+          const k = el.getAttribute('data-mod-k');
+          var v = el.value;
+          if (k === 'price_kz') v = Number(v) || 0;
+          if (k === 'featured') v = v === '1';
+          if (k === 'features_pt' || k === 'features_en') {
+            v = String(v || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
+          }
+          m[k] = v;
+        });
+        modalities.push(m);
+      });
+      const schedules = [];
+      editor.querySelectorAll('[data-sch-i]').forEach(function (row) {
+        const sch = {};
+        row.querySelectorAll('[data-sch-k]').forEach(function (el) {
+          sch[el.getAttribute('data-sch-k')] = el.value;
+        });
+        schedules.push(sch);
+      });
+      return Object.assign({}, prev, base, { modalities: modalities, schedules: schedules });
+    }
+
+    if (siteSec === 'products') {
+      const items = [];
+      editor.querySelectorAll('.product-edit-card').forEach(function (card) {
+        const p = {};
+        card.querySelectorAll('[data-prod-k]').forEach(function (el) {
+          const k = el.getAttribute('data-prod-k');
+          var v = el.value;
+          if (k === 'price_kz') v = Number(v) || 0;
+          p[k] = v;
+        });
+        items.push(p);
+      });
+      return Object.assign({}, prev, base, { items: items });
+    }
+
+    if (siteSec === 'diff') {
+      const items = [];
+      editor.querySelectorAll('.diff-edit-card').forEach(function (card) {
+        const d = {};
+        card.querySelectorAll('[data-diff-k]').forEach(function (el) {
+          d[el.getAttribute('data-diff-k')] = el.value;
+        });
+        items.push(d);
+      });
+      return Object.assign({}, prev, base, { items: items });
+    }
+
+    return Object.assign({}, prev, base);
+  }
+
+  async function saveSiteSection() {
+    try {
+      const data = buildSectionPayload();
+      siteStatus('A guardar…', true);
+      const res = await api('/admin/site', {
+        method: 'PUT',
+        body: JSON.stringify({ section: siteSec, data: data }),
+      });
+      if (siteCache) siteCache[siteSec] = res.data || data;
+      siteStatus('Guardado. O site público já usa estes dados.', true);
+    } catch (err) {
+      siteStatus(err.message || 'Erro ao guardar', false);
+    }
+  }
+
+  async function loadWebsite() {
+    const editor = document.getElementById('siteEditor');
+    try {
+      const data = await api('/admin/site');
+      siteCache = data.site || {};
+      renderSiteSection();
+      siteStatus('', true);
+    } catch (err) {
+      if (editor) editor.innerHTML = '<p class="hint error-hint">' + esc(err.message) + '</p>';
+    }
+  }
+
+  document.querySelectorAll('.site-tab').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      siteSec = tab.getAttribute('data-site-sec') || 'hero';
+      document.querySelectorAll('.site-tab').forEach(function (t) {
+        t.classList.toggle('active', t === tab);
+      });
+      renderSiteSection();
+    });
+  });
+
 
   // —— Boot ——
   if (getToken()) {

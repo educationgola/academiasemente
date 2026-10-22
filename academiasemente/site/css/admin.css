@@ -1120,3 +1120,109 @@ tr:hover td { background: #fafbfc; }
     padding-right: 2rem;
   }
 }
+
+/* —— Website CMS —— */
+.site-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+}
+.site-tab {
+  border: 1px solid var(--border, #e5e5e5);
+  background: #fff;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--muted, #666);
+}
+.site-tab.active {
+  background: var(--ink, #111);
+  color: #fff;
+  border-color: var(--ink, #111);
+}
+.site-editor .bilingual {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+@media (max-width: 700px) {
+  .site-editor .bilingual {
+    grid-template-columns: 1fr;
+  }
+}
+.site-editor label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted, #666);
+  margin-bottom: 0.25rem;
+}
+.site-editor input[type="text"],
+.site-editor input[type="number"],
+.site-editor input[type="url"],
+.site-editor input[type="email"],
+.site-editor textarea {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border, #e5e5e5);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  margin-bottom: 0.65rem;
+  background: #fff;
+}
+.site-editor textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+.site-editor .img-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+.site-editor .img-preview {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border, #e5e5e5);
+  background: #f5f5f5;
+}
+.site-editor .modality-card,
+.site-editor .product-edit-card,
+.site-editor .diff-edit-card {
+  border: 1px solid var(--border, #e5e5e5);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: #fafafa;
+}
+.site-editor .modality-card h4,
+.site-editor .product-edit-card h4,
+.site-editor .diff-edit-card h4 {
+  margin: 0 0 0.75rem;
+  font-size: 0.9375rem;
+}
+.site-editor .features-list textarea {
+  min-height: 110px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8125rem;
+}
+.site-editor .save-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border, #e5e5e5);
+}
+.site-editor .hint-inline {
+  font-size: 0.75rem;
+  color: var(--muted, #666);
+}
