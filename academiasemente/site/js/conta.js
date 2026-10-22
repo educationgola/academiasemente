@@ -162,7 +162,26 @@
     var badge = document.getElementById('userStatusBadge');
     var avatar = document.getElementById('userAvatar');
 
-    if (nameEl) nameEl.textContent = (user && user.name) || (user && user.email) || 'Aluno';
+    var displayName = (user && user.name) || (user && user.email) || 'Aluno';
+    if (nameEl) nameEl.textContent = displayName;
+    var heroName = document.getElementById('dashHeroName');
+    if (heroName) {
+      var first = String(displayName).split(/\s+/)[0] || displayName;
+      heroName.textContent = first;
+    }
+    var heroDate = document.getElementById('dashHeroDate');
+    if (heroDate) {
+      try {
+        heroDate.textContent = new Date().toLocaleDateString('pt-AO', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        });
+      } catch (e) {
+        heroDate.textContent = '';
+      }
+    }
 
     if (badge) {
       var st = (user && user.status) || 'pending';
