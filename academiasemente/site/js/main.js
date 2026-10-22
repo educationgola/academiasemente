@@ -481,6 +481,13 @@
     checkoutForm.addEventListener('submit', function (e) {
       e.preventDefault();
       if (cart.length === 0) return;
+      var errEl = document.getElementById('checkoutError');
+      var submitBtn = document.getElementById('checkoutSubmitBtn');
+      if (errEl) {
+        errEl.hidden = true;
+        errEl.textContent = '';
+      }
+
       var name = document.getElementById('co-name').value.trim();
       var phone = document.getElementById('co-phone').value.trim();
       var address = document.getElementById('co-address').value.trim();
@@ -488,36 +495,72 @@
       var municipality = document.getElementById('co-municipality').value.trim();
       var notesEl = document.getElementById('co-notes');
       var notes = notesEl ? notesEl.value.trim() : '';
+      var paymentEl = document.getElementById('co-payment');
+      var payment_method = paymentEl ? paymentEl.value : '';
 
-      // Snapshot order before clearing cart
       var orderItems = cart.map(function (item) {
         return {
           id: item.id,
           name: item.name,
           nameEn: item.nameEn,
           price: item.price,
-          qty: item.qty
+          qty: item.qty,
         };
       });
       var orderTotal = getCartTotal();
 
-      var msg = 'Olá! Gostaria de *encomendar* os seguintes produtos:\n\n';
-      orderItems.forEach(function (item) {
-        var label = (currentLang === 'en' && item.nameEn) ? item.nameEn : item.name;
-        msg += '• ' + label + ' × ' + item.qty + ' — ' + formatPrice(item.price * item.qty) + '\n';
-      });
-      msg += '\n*Total: ' + formatPrice(orderTotal) + '*\n\n';
-      msg += '*Entrega*\n';
-      msg += 'Nome: ' + name + '\n';
-      msg += 'Telefone: ' + phone + '\n';
-      msg += 'Morada: ' + address + '\n';
-      msg += 'Província: ' + province + '\n';
-      msg += 'Município: ' + municipality + '\n';
-      if (notes) msg += 'Notas: ' + notes + '\n';
-      openWhatsApp(msg);
+      var apiBase = (window.ACADEMIA_CONFIG && window.ACADEMIA_CONFIG.WORKER_URL) || '';
+      apiBase = apiBase.replace(/\/$/, '');
+      if (!apiBase) {
+        if (errEl) {
+          errEl.textContent = 'Serviço indisponível. Tente mais tarde ou contacte no WhatsApp.';
+          errEl.hidden = false;
+        }
+        return;
+      }
 
-      clearCart();
-      showOrderSuccess(name, orderItems, orderTotal);
+      if (submitBtn) submitBtn.disabled = true;
+      fetch(apiBase + '/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name,
+          phone: phone,
+          address: address,
+          province: province,
+          municipality: municipality,
+          notes: notes,
+          payment_method: payment_method,
+          items: orderItems,
+        }),
+      })
+        .then(function (res) {
+          return res.text().then(function (text) {
+            var data = {};
+            try {
+              data = text ? JSON.parse(text) : {};
+            } catch (err) {
+              data = { error: text || 'Erro do servidor' };
+            }
+            if (!res.ok) throw new Error(data.error || 'Erro ' + res.status);
+            return data;
+          });
+        })
+        .then(function () {
+          clearCart();
+          showOrderSuccess(name, orderItems, orderTotal);
+        })
+        .catch(function (err) {
+          if (errEl) {
+            errEl.textContent =
+              err.message ||
+              'Não foi possível enviar a encomenda. Verifique a ligação ou contacte no WhatsApp.';
+            errEl.hidden = false;
+          }
+        })
+        .finally(function () {
+          if (submitBtn) submitBtn.disabled = false;
+        });
     });
   }
 
@@ -922,7 +965,7 @@
       checkoutDelivery: 'Dados de entrega',
       checkoutNotesPh: 'Instruções de entrega ou outras informações',
       checkoutSubmit: 'Confirmar encomenda',
-      checkoutHint: 'Após confirmar, verá a confirmação e a equipa enviará a referência de pagamento.',
+      checkoutHint: 'Após confirmar, a encomenda fica na área da equipa. Contactamo-lo por telefone ou WhatsApp com os próximos passos de pagamento.',
       orderSuccessEyebrow: 'Encomenda recebida',
       orderSuccessTitle: 'Obrigado,',
       orderSuccessText: 'A sua encomenda foi registada com sucesso. Em breve enviaremos a <strong>referência de pagamento</strong> e o recibo por WhatsApp ou e-mail.',
@@ -1127,7 +1170,7 @@
       checkoutDelivery: 'Delivery details',
       checkoutNotesPh: 'Delivery instructions or other notes',
       checkoutSubmit: 'Confirm order',
-      checkoutHint: 'After confirming, you will see confirmation and the team will send the payment reference.',
+      checkoutHint: 'After confirming, the order is saved for the team. We will contact you by phone or WhatsApp with payment next steps.',
       orderSuccessEyebrow: 'Order received',
       orderSuccessTitle: 'Thank you,',
       orderSuccessText: 'Your order was registered successfully. We will soon send the <strong>payment reference</strong> and receipt by WhatsApp or email.',

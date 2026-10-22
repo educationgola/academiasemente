@@ -47,6 +47,7 @@
     <nav class="admin-nav">
       <button type="button" class="nav-btn active" data-panel="students">Alunos</button>
       <button type="button" class="nav-btn" data-panel="enrollments">Inscrições</button>
+      <button type="button" class="nav-btn" data-panel="orders">Encomendas</button>
       <button type="button" class="nav-btn" data-panel="courses">Cursos &amp; Vídeos</button>
       <button type="button" class="nav-btn" data-panel="guide">Guia</button>
     </nav>
@@ -89,6 +90,25 @@
         </div>
         <p class="muted" id="enrollmentsCount" style="margin:0 0 0.75rem"></p>
         <div id="enrollmentsList" class="enrollments-list">
+          <p class="muted">A carregar…</p>
+        </div>
+      </section>
+
+      <!-- Orders / Encomendas -->
+      <section id="panel-orders" class="panel" hidden>
+        <div class="panel-head">
+          <h2>Encomendas</h2>
+          <button type="button" class="btn btn-outline" id="refreshOrders">Actualizar</button>
+        </div>
+        <div class="students-toolbar">
+          <select id="orderStatusFilter">
+            <option value="pending">Pendentes</option>
+            <option value="done">Concluídas</option>
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <p class="muted" id="ordersCount" style="margin:0 0 0.75rem"></p>
+        <div id="ordersList" class="enrollments-list">
           <p class="muted">A carregar…</p>
         </div>
       </section>

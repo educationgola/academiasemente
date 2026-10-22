@@ -110,6 +110,7 @@
       document.querySelectorAll('.panel').forEach((p) => (p.hidden = true));
       document.getElementById('panel-' + btn.dataset.panel).hidden = false;
       if (btn.dataset.panel === 'enrollments') loadEnrollments();
+      if (btn.dataset.panel === 'orders') loadOrders();
     });
   });
 
@@ -119,6 +120,7 @@
     loadStudents();
     loadCourses();
     loadEnrollments();
+    loadOrders();
   }
 
   // ==================== Students ====================
@@ -1103,6 +1105,152 @@
             body: JSON.stringify({ id }),
           });
           loadEnrollments();
+        } catch (err) {
+          alert(err.message);
+        }
+      }
+    });
+  }
+
+  // ==================== Encomendas ====================
+
+  const ordersList = document.getElementById('ordersList');
+  const ordersCount = document.getElementById('ordersCount');
+  const orderStatusFilter = document.getElementById('orderStatusFilter');
+  let ordersCache = [];
+
+  async function loadOrders() {
+    if (!ordersList) return;
+    ordersList.innerHTML = '<p class="muted">A carregar…</p>';
+    try {
+      const status = orderStatusFilter ? orderStatusFilter.value : 'pending';
+      const q = status ? '?status=' + encodeURIComponent(status) : '';
+      const data = await api('/admin/orders' + q);
+      ordersCache = data.orders || [];
+      renderOrders();
+    } catch (err) {
+      ordersList.innerHTML = '<p class="error">' + esc(err.message) + '</p>';
+    }
+  }
+
+  function renderOrders() {
+    if (!ordersList) return;
+    if (ordersCount) {
+      ordersCount.textContent = ordersCache.length
+        ? ordersCache.length + ' encomenda(s)'
+        : 'Nenhuma encomenda neste filtro.';
+    }
+    if (!ordersCache.length) {
+      ordersList.innerHTML =
+        '<div class="empty-state">Nenhuma encomenda. Quando alguém concluir o checkout, aparece aqui.</div>';
+      return;
+    }
+
+    ordersList.innerHTML = ordersCache
+      .map((o) => {
+        const wa = whatsappHref(o.phone, o.name, 'encomenda de produtos');
+        const pay = PAY_LABELS[o.payment_method] || o.payment_method || '—';
+        const statusChip =
+          o.status === 'done'
+            ? '<span class="chip chip-done">Concluída</span>'
+            : '<span class="chip chip-pending">Pendente</span>';
+        const items = Array.isArray(o.items) ? o.items : [];
+        const itemsHtml = items
+          .map(
+            (it) =>
+              '<li>' +
+              esc(it.name || it.id) +
+              ' × ' +
+              esc(String(it.qty)) +
+              ' — ' +
+              formatKz(it.price * it.qty) +
+              '</li>'
+          )
+          .join('');
+
+        return (
+          '<article class="enrollment-card" data-id="' +
+          esc(o.id) +
+          '">' +
+          '<div class="enrollment-card-head">' +
+          '<div>' +
+          '<h3>' +
+          esc(o.name) +
+          '</h3>' +
+          '<div class="enrollment-meta">' +
+          statusChip +
+          ' <strong>' +
+          formatKz(o.total_kz) +
+          '</strong> · ' +
+          esc(pay) +
+          '</div>' +
+          '</div>' +
+          '<div class="enrollment-actions">' +
+          (o.status !== 'done'
+            ? '<button type="button" class="btn btn-sm" data-order-done="' +
+              esc(o.id) +
+              '">Concluir</button>'
+            : '') +
+          (wa
+            ? '<a class="btn btn-sm btn-outline" href="' +
+              esc(wa) +
+              '" target="_blank" rel="noopener">WhatsApp</a>'
+            : '') +
+          '<button type="button" class="btn btn-sm btn-danger" data-order-del="' +
+          esc(o.id) +
+          '">Apagar</button>' +
+          '</div>' +
+          '</div>' +
+          '<ul class="order-items-list">' +
+          itemsHtml +
+          '</ul>' +
+          '<dl class="enrollment-details">' +
+          row('Telefone', o.phone) +
+          row('Email', o.email) +
+          row('Morada', o.address) +
+          row('Província', o.province) +
+          row('Município', o.municipality) +
+          row('Notas', o.notes) +
+          row('Recebido', o.created_at) +
+          '</dl>' +
+          '</article>'
+        );
+      })
+      .join('');
+  }
+
+  if (document.getElementById('refreshOrders')) {
+    document.getElementById('refreshOrders').addEventListener('click', loadOrders);
+  }
+  if (orderStatusFilter) {
+    orderStatusFilter.addEventListener('change', loadOrders);
+  }
+
+  if (ordersList) {
+    ordersList.addEventListener('click', async (ev) => {
+      const doneBtn = ev.target.closest('[data-order-done]');
+      const delBtn = ev.target.closest('[data-order-del]');
+      if (doneBtn) {
+        const id = doneBtn.getAttribute('data-order-done');
+        try {
+          await api('/admin/orders/done', {
+            method: 'POST',
+            body: JSON.stringify({ id }),
+          });
+          loadOrders();
+        } catch (err) {
+          alert(err.message);
+        }
+      }
+      if (delBtn) {
+        const id = delBtn.getAttribute('data-order-del');
+        if (!confirm('Apagar esta encomenda permanentemente?')) return;
+        try {
+          await api('/admin/orders/delete', {
+            method: 'POST',
+            body: JSON.stringify({ id }),
+          });
+          loadOrders();
         } catch (err) {
           alert(err.message);
         }

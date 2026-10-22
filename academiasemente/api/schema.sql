@@ -116,3 +116,24 @@ CREATE TABLE IF NOT EXISTS enrollments (
 
 CREATE INDEX IF NOT EXISTS idx_enrollments_status ON enrollments(status);
 CREATE INDEX IF NOT EXISTS idx_enrollments_created ON enrollments(created_at);
+
+-- Product orders from checkout.html (admin tab: Encomendas)
+CREATE TABLE IF NOT EXISTS orders (
+  id              TEXT PRIMARY KEY,
+  name            TEXT NOT NULL,
+  phone           TEXT,
+  email           TEXT,
+  address         TEXT,
+  province        TEXT,
+  municipality    TEXT,
+  notes           TEXT,
+  items_json      TEXT NOT NULL,
+  total_kz        INTEGER NOT NULL DEFAULT 0,
+  payment_method  TEXT,
+  status          TEXT NOT NULL DEFAULT 'pending',
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);

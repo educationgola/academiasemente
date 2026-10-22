@@ -26,6 +26,7 @@ export default {
       // ---------- Public ----------
       if (path === '/api/health') return json({ ok: true, ts: new Date().toISOString() });
       if (path === '/api/enroll' && request.method === 'POST') return handlePublicEnroll(request, env);
+      if (path === '/api/orders' && request.method === 'POST') return handlePublicOrder(request, env);
 
       // ---------- Auth ----------
       if (path === '/api/auth/register' && request.method === 'POST') return handleRegister(request, env);
@@ -65,6 +66,9 @@ export default {
       if (path === '/api/admin/enrollments' && request.method === 'GET') return handleListEnrollments(request, env);
       if (path === '/api/admin/enrollments/done' && request.method === 'POST') return handleEnrollmentDone(request, env);
       if (path === '/api/admin/enrollments/delete' && request.method === 'POST') return handleEnrollmentDelete(request, env);
+      if (path === '/api/admin/orders' && request.method === 'GET') return handleListOrders(request, env);
+      if (path === '/api/admin/orders/done' && request.method === 'POST') return handleOrderDone(request, env);
+      if (path === '/api/admin/orders/delete' && request.method === 'POST') return handleOrderDelete(request, env);
 
       return json({ error: 'Not found' }, 404);
     } catch (err) {
@@ -1204,5 +1208,119 @@ async function handleEnrollmentDelete(request, env) {
   const body = await readBody(request);
   if (!body.id) return json({ error: 'id obrigatório' }, 400);
   await env.DB.prepare(`DELETE FROM enrollments WHERE id = ?`).bind(body.id).run();
+  return json({ ok: true });
+}
+
+// ==================== Orders (Encomendas) ====================
+
+async function handlePublicOrder(request, env) {
+  if (!env.DB) return json({ error: 'Database not configured' }, 500);
+  const body = await readBody(request);
+
+  const name = String(body.name || '').trim();
+  const phone = String(body.phone || '').trim();
+  const payment_method = String(body.payment_method || '').trim();
+  const items = Array.isArray(body.items) ? body.items : [];
+
+  if (!name || name.length < 2) return json({ error: 'Nome é obrigatório.' }, 400);
+  if (!phone) return json({ error: 'Telefone / WhatsApp é obrigatório.' }, 400);
+  if (!PAYMENT_METHODS.includes(payment_method)) {
+    return json({ error: 'Escolha um método de pagamento válido.' }, 400);
+  }
+  if (!items.length) return json({ error: 'Carrinho vazio.' }, 400);
+
+  const cleanItems = items.map((it) => ({
+    id: String(it.id || ''),
+    name: String(it.name || ''),
+    nameEn: String(it.nameEn || it.name || ''),
+    price: Math.max(0, Math.round(Number(it.price) || 0)),
+    qty: Math.max(1, Math.round(Number(it.qty) || 1)),
+  }));
+
+  const total_kz = cleanItems.reduce((s, it) => s + it.price * it.qty, 0);
+  const id = uuid();
+
+  try {
+    await env.DB.prepare(
+      `INSERT INTO orders (
+        id, name, phone, email, address, province, municipality, notes,
+        items_json, total_kz, payment_method, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`
+    )
+      .bind(
+        id,
+        name,
+        phone,
+        String(body.email || '').trim().toLowerCase() || null,
+        String(body.address || '').trim() || null,
+        String(body.province || '').trim() || null,
+        String(body.municipality || '').trim() || null,
+        String(body.notes || '').trim() || null,
+        JSON.stringify(cleanItems),
+        total_kz,
+        payment_method
+      )
+      .run();
+  } catch (err) {
+    if (String(err.message || '').includes('no such table')) {
+      return json({ error: 'Tabela orders em falta. Execute schema.sql no D1.' }, 500);
+    }
+    throw err;
+  }
+
+  return json({ ok: true, id, total_kz, payment_method });
+}
+
+async function handleListOrders(request, env) {
+  await requireAdmin(request, env);
+  const url = new URL(request.url);
+  const status = (url.searchParams.get('status') || '').trim();
+
+  let sql = `SELECT * FROM orders`;
+  const binds = [];
+  if (status === 'pending' || status === 'done') {
+    sql += ` WHERE status = ?`;
+    binds.push(status);
+  }
+  sql += ` ORDER BY created_at DESC LIMIT 200`;
+
+  try {
+    const stmt = env.DB.prepare(sql);
+    const { results } = binds.length ? await stmt.bind(...binds).all() : await stmt.all();
+    const orders = (results || []).map((o) => {
+      let items = [];
+      try {
+        items = JSON.parse(o.items_json || '[]');
+      } catch (_) {
+        items = [];
+      }
+      return { ...o, items };
+    });
+    return json({ orders });
+  } catch (err) {
+    if (String(err.message || '').includes('no such table')) {
+      return json({ orders: [], error: 'Tabela orders em falta. Execute schema.sql.' });
+    }
+    throw err;
+  }
+}
+
+async function handleOrderDone(request, env) {
+  await requireAdmin(request, env);
+  const body = await readBody(request);
+  if (!body.id) return json({ error: 'id obrigatório' }, 400);
+  await env.DB.prepare(
+    `UPDATE orders SET status = 'done', updated_at = datetime('now') WHERE id = ?`
+  )
+    .bind(body.id)
+    .run();
+  return json({ ok: true });
+}
+
+async function handleOrderDelete(request, env) {
+  await requireAdmin(request, env);
+  const body = await readBody(request);
+  if (!body.id) return json({ error: 'id obrigatório' }, 400);
+  await env.DB.prepare(`DELETE FROM orders WHERE id = ?`).bind(body.id).run();
   return json({ ok: true });
 }

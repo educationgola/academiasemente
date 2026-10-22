@@ -160,8 +160,21 @@
               <textarea id="co-notes" name="notes" rows="3" placeholder="Instruções de entrega ou outras informações" data-i18n-placeholder="checkoutNotesPh"></textarea>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-full" data-i18n="checkoutSubmit">Confirmar encomenda</button>
-            <p class="form-hint" data-i18n="checkoutHint">Após confirmar, verá a confirmação e a equipa enviará a referência de pagamento.</p>
+            <p class="form-section-title" data-i18n="formSectionPayment">Pagamento</p>
+            <div class="form-group">
+              <label for="co-payment" data-i18n="formPayment">Método de pagamento preferido *</label>
+              <select id="co-payment" name="payment_method" required>
+                <option value="" disabled selected data-i18n="formPaymentPh">Seleccione</option>
+                <option value="referencia" data-i18n="optPayRef">Referência Multicaixa</option>
+                <option value="iban" data-i18n="optPayIban">Transferência IBAN</option>
+                <option value="express" data-i18n="optPayExpress">Multicaixa Express</option>
+              </select>
+              <p class="field-hint" data-i18n="formPaymentHint">A equipa enviará os dados de pagamento (referência ou IBAN) conforme a sua escolha.</p>
+            </div>
+
+            <p class="auth-error enroll-form-error" id="checkoutError" hidden></p>
+            <button type="submit" class="btn btn-primary btn-full" id="checkoutSubmitBtn" data-i18n="checkoutSubmit">Confirmar encomenda</button>
+            <p class="form-hint" data-i18n="checkoutHint">Após confirmar, a encomenda fica na área da equipa. Contactamo-lo por telefone ou WhatsApp com os próximos passos de pagamento.</p>
           </form>
         </div>
 
@@ -266,6 +279,7 @@
     </div>
   </aside>
 
+  <script src="js/config.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
