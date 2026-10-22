@@ -90,7 +90,13 @@
             <label>Título (PT) <input name="title_pt" required placeholder="Ex.: Inglês A1"></label>
             <label>Título (EN) <input name="title_en" placeholder="Optional"></label>
             <label>Descrição (PT) <textarea name="description_pt" rows="2" placeholder="Breve descrição do curso"></textarea></label>
-            <label>Cover URL <input name="cover_url" placeholder="https://…" inputmode="url"></label>
+            <label>Capa do curso (imagem)
+              <input type="file" name="cover_file" id="courseCoverFile" accept="image/jpeg,image/png,image/webp,image/gif">
+            </label>
+            <label>Cover URL <span class="field-optional">(opcional — preenchido após upload)</span>
+              <input name="cover_url" id="courseCoverUrl" placeholder="https://…" inputmode="url">
+            </label>
+            <p class="hint" id="coverUploadStatus" hidden></p>
             <div class="form-actions">
               <button type="submit" class="btn" id="courseSubmitBtn">Guardar curso</button>
               <button type="button" class="btn btn-outline" id="courseCancelEdit" hidden>Cancelar edição</button>

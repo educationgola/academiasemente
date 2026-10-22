@@ -544,6 +544,14 @@ hr {
   margin: 1.5rem 0;
 }
 
+.field-optional {
+  font-weight: 400;
+  font-size: 0.85em;
+  color: var(--muted, #888);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .hint, .muted {
   color: var(--muted);
   font-size: 0.85rem;

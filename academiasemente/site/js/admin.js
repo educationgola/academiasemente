@@ -593,6 +593,12 @@
     courseFormTitle.textContent = 'Novo curso';
     courseSubmitBtn.textContent = 'Guardar curso';
     courseCancelEdit.hidden = true;
+    const statusEl = document.getElementById('coverUploadStatus');
+    if (statusEl) {
+      statusEl.hidden = true;
+      statusEl.textContent = '';
+      statusEl.className = 'hint';
+    }
   }
 
   function startEditCourse(id) {
@@ -611,24 +617,105 @@
 
   courseCancelEdit.addEventListener('click', resetCourseForm);
 
+  const courseCoverFile = document.getElementById('courseCoverFile');
+  const courseCoverUrl = document.getElementById('courseCoverUrl') || courseForm.elements.cover_url;
+  const coverUploadStatus = document.getElementById('coverUploadStatus');
+
+  async function uploadCoverToCloudinary(file) {
+    if (coverUploadStatus) {
+      coverUploadStatus.hidden = false;
+      coverUploadStatus.textContent = 'A obter assinatura…';
+      coverUploadStatus.className = 'hint';
+    }
+    const slug = (file.name || 'cover')
+      .replace(/\.[^.]+$/, '')
+      .replace(/[^a-zA-Z0-9_-]/g, '-')
+      .slice(0, 40);
+    const sign = await api('/admin/cloudinary/sign', {
+      method: 'POST',
+      body: JSON.stringify({
+        resource_type: 'image',
+        slug: 'cover-' + slug + '-' + Date.now().toString(36),
+      }),
+    });
+
+    if (coverUploadStatus) {
+      const mb = (file.size / (1024 * 1024)).toFixed(1);
+      coverUploadStatus.textContent = `A enviar capa (${mb} MB)…`;
+    }
+
+    const form = new FormData();
+    form.append('file', file);
+    form.append('api_key', sign.api_key);
+    form.append('timestamp', String(sign.timestamp));
+    form.append('signature', sign.signature);
+    form.append('public_id', sign.public_id);
+
+    let res;
+    try {
+      res = await fetch(sign.upload_url, { method: 'POST', body: form });
+    } catch (netErr) {
+      throw new Error(
+        'Falha de rede ao enviar a imagem. Verifique a ligação ou use um ficheiro mais pequeno.'
+      );
+    }
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const msg =
+        (result && result.error && result.error.message) ||
+        result.message ||
+        'Upload da capa falhou (HTTP ' + res.status + ')';
+      throw new Error(msg);
+    }
+    // Prefer secure_url from Cloudinary response
+    const url =
+      result.secure_url ||
+      result.url ||
+      (sign.cloud_name && result.public_id
+        ? `https://res.cloudinary.com/${sign.cloud_name}/image/upload/${result.public_id}`
+        : null);
+    if (!url) throw new Error('Cloudinary não devolveu URL da imagem.');
+
+    if (coverUploadStatus) {
+      coverUploadStatus.textContent = 'Capa enviada.';
+      coverUploadStatus.className = 'hint success-hint';
+    }
+    return url;
+  }
+
   courseForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd = new FormData(courseForm);
-    const payload = {
-      title_pt: fd.get('title_pt'),
-      title_en: fd.get('title_en') || null,
-      description_pt: fd.get('description_pt') || null,
-      cover_url: fd.get('cover_url') || null,
-    };
-    const id = fd.get('id');
-    if (id) payload.id = id;
+    let coverUrl = (fd.get('cover_url') || '').trim() || null;
+    const file = courseCoverFile && courseCoverFile.files && courseCoverFile.files[0];
+
+    courseSubmitBtn.disabled = true;
     try {
+      if (file) {
+        coverUrl = await uploadCoverToCloudinary(file);
+        if (courseCoverUrl) courseCoverUrl.value = coverUrl;
+      }
+      const payload = {
+        title_pt: fd.get('title_pt'),
+        title_en: fd.get('title_en') || null,
+        description_pt: fd.get('description_pt') || null,
+        cover_url: coverUrl,
+      };
+      const id = fd.get('id');
+      if (id) payload.id = id;
       await api('/admin/courses', { method: 'POST', body: JSON.stringify(payload) });
       resetCourseForm();
       loadCourses();
       alert(id ? 'Curso actualizado.' : 'Curso guardado.');
     } catch (err) {
+      if (coverUploadStatus) {
+        coverUploadStatus.hidden = false;
+        coverUploadStatus.textContent = err.message;
+        coverUploadStatus.className = 'hint error-hint';
+      }
       alert(err.message);
+    } finally {
+      courseSubmitBtn.disabled = false;
     }
   });
 

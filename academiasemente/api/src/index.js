@@ -65,7 +65,10 @@ export default {
       return json({ error: 'Not found' }, 404);
     } catch (err) {
       console.error(err);
-      return json({ error: err.message || 'Internal error' }, 500);
+      // Prefer pre-built Response (keeps CORS on 401/403 from requireStudent/requireAdmin)
+      if (err && err.response instanceof Response) return err.response;
+      const status = err && err.status ? err.status : 500;
+      return json({ error: (err && err.message) || 'Internal error' }, status);
     }
   },
 };
@@ -207,7 +210,13 @@ function getBearer(request) {
 async function requireStudent(request, env) {
   const token = getBearer(request);
   const payload = await verifyToken(token, env.JWT_SECRET);
-  if (!payload || payload.role !== 'student') throw new Error('Unauthorized');
+  if (!payload || payload.role !== 'student') {
+    // Return a Response (not throw) so CORS headers are always present
+    const err = new Error('Unauthorized');
+    err.status = 401;
+    err.response = json({ error: 'Sessão inválida ou expirada. Entre novamente.' }, 401);
+    throw err;
+  }
   return payload;
 }
 
@@ -222,7 +231,10 @@ async function requireAdmin(request, env) {
   if (token && token === env.ADMIN_PASSWORD) {
     return { role: 'admin' };
   }
-  throw new Error('Unauthorized');
+  const err = new Error('Unauthorized');
+  err.status = 401;
+  err.response = json({ error: 'Não autorizado.' }, 401);
+  throw err;
 }
 
 // ==================== Auth handlers ====================
@@ -391,16 +403,34 @@ async function handleStudentCourses(request, env) {
 
   // Attach videos + progress for each course
   for (const course of courses) {
-    const { results: videos } = await env.DB.prepare(`
-      SELECT v.id, v.title_pt, v.title_en, v.description_pt, v.duration_seconds, v.sort_order,
-             COALESCE(wp.position_seconds, 0) AS position_seconds,
-             COALESCE(wp.completed, 0) AS completed,
-             wp.updated_at AS progress_updated_at
-      FROM videos v
-      LEFT JOIN watch_progress wp ON wp.video_id = v.id AND wp.user_id = ?
-      WHERE v.course_id = ? AND v.active = 1
-      ORDER BY v.sort_order, v.title_pt
-    `).bind(payload.sub, course.id).all();
+    let videos = [];
+    try {
+      const res = await env.DB.prepare(`
+        SELECT v.id, v.title_pt, v.title_en, v.description_pt, v.duration_seconds, v.sort_order,
+               COALESCE(wp.position_seconds, 0) AS position_seconds,
+               COALESCE(wp.completed, 0) AS completed,
+               wp.updated_at AS progress_updated_at
+        FROM videos v
+        LEFT JOIN watch_progress wp ON wp.video_id = v.id AND wp.user_id = ?
+        WHERE v.course_id = ? AND v.active = 1
+        ORDER BY v.sort_order, v.title_pt
+      `).bind(payload.sub, course.id).all();
+      videos = res.results || [];
+    } catch (_) {
+      // Fallback if watch_progress table not migrated yet
+      const res = await env.DB.prepare(`
+        SELECT id, title_pt, title_en, description_pt, duration_seconds, sort_order
+        FROM videos
+        WHERE course_id = ? AND active = 1
+        ORDER BY sort_order, title_pt
+      `).bind(course.id).all();
+      videos = (res.results || []).map((v) => ({
+        ...v,
+        position_seconds: 0,
+        completed: 0,
+        progress_updated_at: null,
+      }));
+    }
 
     const total = videos.length;
     const done = videos.filter((v) => v.completed).length;
@@ -976,16 +1006,34 @@ async function handleCloudinarySign(request, env) {
   const cloudName = env.CLOUDINARY_CLOUD_NAME || 'lfoop5b8';
   const folder = env.CLOUDINARY_FOLDER || 'academiasemente';
   const timestamp = Math.floor(Date.now() / 1000);
-  // public_id without extension; path under private folder
   const slug = (body.slug || uuid().replace(/-/g, '').slice(0, 10)).replace(/[^a-zA-Z0-9_-]/g, '-');
-  const publicId = body.public_id || `${folder}/private/${slug}`;
+
+  // resource_type: 'video' (default, private lessons) | 'image' (public course covers)
+  const resourceType = body.resource_type === 'image' ? 'image' : 'video';
+
+  let publicId;
+  let type;
+  let signParams;
+
+  if (resourceType === 'image') {
+    // Public delivery so student dashboard <img> works without signed URLs
+    publicId = body.public_id || `${folder}/covers/${slug}`;
+    type = 'upload';
+    signParams = {
+      public_id: publicId,
+      timestamp: String(timestamp),
+    };
+  } else {
+    publicId = body.public_id || `${folder}/private/${slug}`;
+    type = 'authenticated';
+    signParams = {
+      public_id: publicId,
+      timestamp: String(timestamp),
+      type: 'authenticated',
+    };
+  }
 
   // Params that go into the signature (alphabetical order required by Cloudinary)
-  const signParams = {
-    public_id: publicId,
-    timestamp: String(timestamp),
-    type: 'authenticated',
-  };
   const toSign =
     Object.keys(signParams)
       .sort()
@@ -998,8 +1046,9 @@ async function handleCloudinarySign(request, env) {
     api_key: env.CLOUDINARY_API_KEY,
     timestamp,
     public_id: publicId,
-    type: 'authenticated',
+    type,
+    resource_type: resourceType,
     signature,
-    upload_url: `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
+    upload_url: `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
   });
 }
