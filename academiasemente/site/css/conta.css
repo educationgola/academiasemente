@@ -694,6 +694,28 @@
   font-weight: 300;
 }
 
+/* Suspended */
+.suspended-banner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius, 14px);
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.75rem;
+  font-size: 0.88rem;
+  font-weight: 300;
+  line-height: 1.55;
+  color: var(--text, #1A1A1A);
+}
+.suspended-banner strong {
+  font-weight: 500;
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #991b1b;
+}
+.suspended-banner p {
+  margin: 0.35rem 0 0.85rem;
+}
+
 /* Continue card */
 .continue-card {
   background: var(--white, #fff);

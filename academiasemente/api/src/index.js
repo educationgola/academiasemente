@@ -220,6 +220,30 @@ async function requireStudent(request, env) {
   return payload;
 }
 
+/** Block suspended accounts from courses/videos even with a valid session token. */
+async function requireActiveStudent(request, env) {
+  const payload = await requireStudent(request, env);
+  const user = await env.DB.prepare('SELECT id, status FROM users WHERE id = ?')
+    .bind(payload.sub)
+    .first();
+  if (!user) {
+    const err = new Error('Unauthorized');
+    err.status = 401;
+    err.response = json({ error: 'Sessão inválida ou expirada. Entre novamente.' }, 401);
+    throw err;
+  }
+  if (user.status === 'suspended') {
+    const err = new Error('Conta suspensa');
+    err.status = 403;
+    err.response = json(
+      { error: 'Conta suspensa. Contacte a academia.', code: 'suspended' },
+      403
+    );
+    throw err;
+  }
+  return payload;
+}
+
 async function requireAdmin(request, env) {
   const token = getBearer(request);
   // Admin tokens are simple: we also accept the raw password in a special header for the blueprint style,
@@ -390,7 +414,7 @@ async function handleMe(request, env) {
 // ==================== Student handlers ====================
 
 async function handleStudentCourses(request, env) {
-  const payload = await requireStudent(request, env);
+  const payload = await requireActiveStudent(request, env);
 
   const { results: courses } = await env.DB.prepare(`
     SELECT c.id, c.title_pt, c.title_en, c.description_pt, c.description_en, c.cover_url,
@@ -494,7 +518,7 @@ async function handleStudentCourses(request, env) {
 }
 
 async function handleSaveProgress(request, env, videoId) {
-  const payload = await requireStudent(request, env);
+  const payload = await requireActiveStudent(request, env);
   const body = await readBody(request);
 
   // Ownership check
@@ -620,7 +644,7 @@ async function handleChangePassword(request, env) {
 }
 
 async function handleSignedVideoUrl(request, env, videoId) {
-  const payload = await requireStudent(request, env);
+  const payload = await requireActiveStudent(request, env);
 
   // Check ownership + return progress for resume
   const row = await env.DB.prepare(`

@@ -182,6 +182,10 @@
     if (pendingBanner) {
       pendingBanner.hidden = !(user && user.status === 'pending');
     }
+    var suspendedBanner = document.getElementById('suspendedBanner');
+    if (suspendedBanner) {
+      suspendedBanner.hidden = !(user && user.status === 'suspended');
+    }
 
     // Prefill profile fields
     var pn = document.getElementById('profileName');
@@ -199,6 +203,13 @@
     if (curField) curField.hidden = !hasPw;
     if (pwdHeading) pwdHeading.textContent = hasPw ? 'Alterar palavra-passe' : 'Definir palavra-passe';
     if (pwdSubmit) pwdSubmit.textContent = hasPw ? 'Alterar palavra-passe' : 'Definir palavra-passe';
+
+    if (user && user.status === 'suspended') {
+      if (coursesList) coursesList.innerHTML = '';
+      if (noCourses) noCourses.hidden = true;
+      if (continueCard) continueCard.hidden = true;
+      return;
+    }
 
     loadCourses();
   }
@@ -232,9 +243,23 @@
         renderCourses(courses);
       })
       .catch(function (err) {
-        coursesList.innerHTML =
-          '<p class="error">' + escapeHtml(err.message || 'Não foi possível carregar os cursos.') + '</p>';
-        if (offlineBanner && /servidor|ligação|contactar/i.test(err.message || '')) {
+        var msg = err.message || 'Não foi possível carregar os cursos.';
+        if (err.status === 403 || /suspensa/i.test(msg)) {
+          coursesList.innerHTML = '';
+          if (noCourses) noCourses.hidden = true;
+          if (continueCard) continueCard.hidden = true;
+          var suspendedBanner = document.getElementById('suspendedBanner');
+          if (suspendedBanner) suspendedBanner.hidden = false;
+          // Refresh badge from server status if we got suspended mid-session
+          var badge = document.getElementById('userStatusBadge');
+          if (badge) {
+            badge.textContent = statusLabel('suspended');
+            badge.className = 'status-badge status-suspended';
+          }
+          return;
+        }
+        coursesList.innerHTML = '<p class="error">' + escapeHtml(msg) + '</p>';
+        if (offlineBanner && /servidor|ligação|contactar/i.test(msg)) {
           offlineBanner.hidden = false;
         }
       });
