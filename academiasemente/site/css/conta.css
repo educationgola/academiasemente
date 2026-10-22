@@ -737,23 +737,54 @@ body.conta-page {
   align-items: center;
   justify-content: center;
   padding: 1rem;
+  padding-bottom: calc(1rem + var(--safe-bottom));
+  cursor: pointer;
 }
 .cert-modal-inner {
   background: #fff;
   border-radius: 20px;
-  padding: 1.5rem;
+  padding: 1.5rem 1.35rem 1.35rem;
   max-width: 480px;
   width: 100%;
   position: relative;
   box-shadow: var(--shadow-lg);
+  cursor: default;
 }
-.cert-preview { text-align: center; padding: 1rem 0; }
+.cert-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 12px;
+  background: var(--bg-soft);
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: background 0.15s;
+}
+.cert-close:hover { background: #d4ead9; }
+.cert-preview { text-align: center; padding: 0.5rem 0.5rem 0.25rem; }
 .cert-logo { font-weight: 700; color: var(--accent); letter-spacing: 0.04em; margin-bottom: 0.5rem; }
 .cert-eyebrow { text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.08em; color: var(--muted); }
 .cert-name { font-family: var(--serif); font-size: 1.5rem; margin: 0.5rem 0; }
 .cert-course { font-weight: 600; color: var(--accent-deep); }
 .cert-date { font-size: 0.85rem; color: var(--muted); }
-.cert-modal-actions { margin-top: 1rem; text-align: center; }
+.cert-modal-actions {
+  margin-top: 1.15rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  justify-content: center;
+}
+.cert-modal-actions .btn-outline,
+.cert-modal-actions .btn-primary {
+  min-width: 8rem;
+}
 
 /* —— Skeleton —— */
 .course-skeleton {

@@ -402,13 +402,24 @@
   });
 
   var certClose = document.getElementById('certClose');
+  var certDismiss = document.getElementById('certDismiss');
   var certModal = document.getElementById('certModal');
   var certPrint = document.getElementById('certPrint');
-  if (certClose && certModal) {
-    certClose.addEventListener('click', function () {
-      certModal.hidden = true;
+
+  function closeCertModal() {
+    if (certModal) certModal.hidden = true;
+  }
+
+  if (certClose) certClose.addEventListener('click', closeCertModal);
+  if (certDismiss) certDismiss.addEventListener('click', closeCertModal);
+  if (certModal) {
+    certModal.addEventListener('click', function (e) {
+      if (e.target === certModal) closeCertModal();
     });
   }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && certModal && !certModal.hidden) closeCertModal();
+  });
   if (certPrint) {
     certPrint.addEventListener('click', function () {
       window.print();

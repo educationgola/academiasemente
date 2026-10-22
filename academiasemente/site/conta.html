@@ -255,10 +255,13 @@
 
   <!-- Certificate preview modal -->
   <div id="certModal" class="cert-modal" hidden>
-    <div class="cert-modal-inner">
-      <button type="button" class="video-close" id="certClose" aria-label="Fechar">×</button>
+    <div class="cert-modal-inner" role="dialog" aria-modal="true" aria-labelledby="certPreview">
+      <button type="button" class="cert-close" id="certClose" aria-label="Fechar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
       <div id="certPreview" class="cert-preview"></div>
       <div class="cert-modal-actions">
+        <button type="button" class="btn-outline" id="certDismiss">Fechar</button>
         <button type="button" class="btn-primary" id="certPrint">Imprimir / Guardar PDF</button>
       </div>
     </div>
