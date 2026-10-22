@@ -11,6 +11,22 @@
   var USER_KEY = CFG.STUDENT_USER_KEY || 'as_student_user';
   var CLIENT_ID = CFG.GOOGLE_CLIENT_ID || '';
 
+  // Show / hide password (login, register, profile)
+  document.querySelectorAll('[data-toggle-password]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.getAttribute('data-toggle-password');
+      var input = id ? document.getElementById(id) : null;
+      if (!input) return;
+      var showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      var eye = btn.querySelector('.icon-eye');
+      var eyeOff = btn.querySelector('.icon-eye-off');
+      if (eye) eye.hidden = !showing;
+      if (eyeOff) eyeOff.hidden = showing;
+      btn.setAttribute('aria-label', showing ? 'Mostrar palavra-passe' : 'Ocultar palavra-passe');
+    });
+  });
+
   var authSection = document.getElementById('authSection');
   var dashboardSection = document.getElementById('dashboardSection');
   var loginForm = document.getElementById('loginForm');
