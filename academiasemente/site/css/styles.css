@@ -2128,8 +2128,17 @@ h1, h2, h3, h4 {
   margin: 0 auto;
 }
 
+/* [hidden] must win over display:grid / flex so success replaces the form */
+.page-checkout [hidden],
+.checkout-grid[hidden],
+.checkout-empty[hidden],
+.order-success[hidden],
+.enroll-success[hidden] {
+  display: none !important;
+}
+
 @media (min-width: 800px) {
-  .checkout-grid {
+  .checkout-grid:not([hidden]) {
     grid-template-columns: 1fr 1.1fr;
     gap: 3rem;
     align-items: start;

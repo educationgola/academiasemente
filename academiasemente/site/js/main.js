@@ -571,6 +571,7 @@
     var nameEl = document.getElementById('orderSuccessName');
     var summaryEl = document.getElementById('orderSuccessSummary');
     var header = document.querySelector('#checkout .section-header');
+    var form = document.getElementById('checkoutForm');
     if (nameEl) nameEl.textContent = name || '';
     if (summaryEl && items && items.length) {
       var lines = items.map(function (item) {
@@ -580,12 +581,31 @@
       lines += '<div class="order-success-line order-success-line--total"><span>' + (currentLang === 'en' ? 'Total' : 'Total') + '</span><strong>' + formatPrice(total) + '</strong></div>';
       summaryEl.innerHTML = lines;
     }
-    if (grid) grid.hidden = true;
-    if (empty) empty.hidden = true;
-    if (header) header.hidden = true;
+    if (grid) {
+      grid.hidden = true;
+      grid.setAttribute('hidden', '');
+    }
+    if (empty) {
+      empty.hidden = true;
+      empty.setAttribute('hidden', '');
+    }
+    if (header) {
+      header.hidden = true;
+      header.setAttribute('hidden', '');
+    }
+    if (form) form.setAttribute('hidden', '');
     if (success) {
       success.hidden = false;
-      success.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      success.removeAttribute('hidden');
+      // Replace view: jump to success as the main content
+      try {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (e) {
+        window.scrollTo(0, 0);
+      }
+      setTimeout(function () {
+        success.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
     }
   }
 
