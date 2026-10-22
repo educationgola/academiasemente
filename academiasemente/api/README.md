@@ -3,8 +3,9 @@
 API for:
 - Student auth (email/password + Google Identity Services ID token)
 - Student courses, signed private video URLs, watch progress, profile
+- In-app **notifications** and **certificates** (auto on 100% course completion)
 - Public enrolment (`/api/enroll`) and product orders (`/api/orders`)
-- Admin: students, courses/videos, enrolments, orders, Cloudinary sign
+- Admin: students, courses/videos, enrolments, orders, **avisos** (notify / broadcast), Cloudinary sign
 - Signed Cloudinary upload params (authenticated videos + public cover images)
 
 **Live URL:** https://academiasemente.educationgola.workers.dev  
@@ -34,7 +35,7 @@ npx wrangler d1 execute academiasemente-db --remote --file=./schema.sql
 npx wrangler deploy
 ```
 
-Tables added over time: `watch_progress`, `enrollments`, `orders`.
+Tables (including later additions): `users`, `courses`, `videos`, `user_courses`, `sessions`, `watch_progress`, `enrollments`, `orders`, **`notifications`**, **`certificates`**.
 
 ### 3. Set secrets (never commit these)
 ```bash
@@ -104,35 +105,48 @@ Set `WORKER_URL` in `site/js/config.js` to `http://127.0.0.1:8787` while testing
 | GET | /api/auth/me | Student | Current user |
 | GET | /api/student/courses | Student (not suspended) | Granted courses + videos + progress + last_watched |
 | GET | /api/student/videos/:id/url | Student (not suspended) | Signed Cloudinary URL + resume position |
-| POST | /api/student/videos/:id/progress | Student (not suspended) | Save watch position / completed |
+| POST | /api/student/videos/:id/progress | Student (not suspended) | Save watch position / completed; may auto-issue **certificate** |
 | POST | /api/student/profile | Student | Update name + phone |
 | POST | /api/student/password | Student | Change or set password |
+| GET | /api/student/notifications | Student | List notifications + `unread` count |
+| POST | /api/student/notifications/read | Student | Mark one (`id`) or all as read |
+| GET | /api/student/certificates | Student | List certificates |
+| POST | /api/student/certificates/claim | Student (active) | Claim cert when course is 100% complete |
+| GET | /api/student/certificates/:id | Student | Single certificate |
 
-### Admin — auth & catalog
+### Admin — auth & summary
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | POST | /api/admin/login | — | Admin password → JWT (12h) |
+| GET | /api/admin/summary | Admin | Counts for UI badges (students, pending enrolments/orders, etc.) |
 | POST | /api/admin/publish | Admin | Upload catalog.json to Cloudinary |
 
 ### Admin — students
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | /api/admin/students | Admin | List students + active courses + course_history |
-| POST | /api/admin/students/grant | Admin | Grant course (`user_id`, `course_id`) → activates pending user |
+| GET | /api/admin/students | Admin | List (`?q=` name/email/phone, `?status=`, `?limit=`) + courses + history |
+| POST | /api/admin/students/grant | Admin | Grant course → activates pending user + **notification** |
 | POST | /api/admin/students/revoke | Admin | Revoke course access |
 | POST | /api/admin/students/update | Admin | Update `name`, `phone`, `status` (`pending` \| `active` \| `suspended`) |
-| POST | /api/admin/students/delete | Admin | Permanent delete user + grants + sessions |
+| POST | /api/admin/students/delete | Admin | Delete student |
+
+### Admin — notifications
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | /api/admin/notifications | Admin | Send to one student (`user_id`, `title`, `body`) |
+| POST | /api/admin/notifications/broadcast | Admin | Send to all active students (`title`, `body`, `only_active` default true) |
 
 ### Admin — enrolments & orders
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | /api/admin/enrollments | Admin | List enrolments (`?status=pending\|done`) |
+| GET | /api/admin/enrollments | Admin | List (`?status=pending\|done`, `?q=`) |
 | POST | /api/admin/enrollments/done | Admin | Mark enrolment handled |
 | POST | /api/admin/enrollments/delete | Admin | Permanent delete enrolment |
-| GET | /api/admin/orders | Admin | List orders (`?status=pending\|done`) |
+| GET | /api/admin/orders | Admin | List (`?status=pending\|done`, `?q=`) |
 | POST | /api/admin/orders/done | Admin | Mark order handled |
 | POST | /api/admin/orders/delete | Admin | Permanent delete order |
 
@@ -151,11 +165,28 @@ Set `WORKER_URL` in `site/js/config.js` to `http://127.0.0.1:8787` while testing
 
 ## Admin panel (`site/admin.html`)
 
-- **Alunos:** search, status filter, change status, edit (name/phone/status + history), grant/revoke, delete, bulk “Limpar probes”
-- **Inscrições:** enrolment requests; Concluir / WhatsApp / Apagar
-- **Encomendas:** product orders; Concluir / WhatsApp / Apagar
-- **Cursos & Vídeos:** create/edit courses; cover image upload or URL; video file upload or `public_id`; soft-delete, restore, permanent delete
-- Mobile: student action buttons stack in a grid so Editar/Eliminar stay visible
+Product-app UI: **desktop sidebar** + **mobile bottom tabs**.
+
+- **Alunos:** search, status filter, change status, edit, grant/revoke, delete, bulk “Limpar probes”
+- **Inscrições:** filter + search; Concluir / WhatsApp / Apagar
+- **Encomendas:** filter + search; Concluir / WhatsApp / Apagar
+- **Cursos & Vídeos:** create/edit courses; cover + video upload; soft-delete / restore
+- **Avisos:** notify one student or broadcast to all active
+- **Guia:** staff quick reference
+
+## Student app (`site/conta.html`)
+
+Product-app UI: **bottom nav** — Cursos · Avisos · Certificados · Perfil.
+
+- Progress + resume; video player with nodownload hints
+- Notifications (grant course, certificate, admin avisos)
+- Certificates auto-created when all videos in a course are completed (also claimable from the course card)
+
+## Certificates & notifications (behaviour)
+
+1. Admin **grants** a course → student gets a notification.
+2. Student completes the **last video** of a course → certificate row + notification (progress response may include `certificate`).
+3. Admin **Avisos** panel can message one user or all active users.
 
 ## Security notes
 - Cloudinary API secret and admin password live **only** as Worker secrets.
@@ -163,6 +194,16 @@ Set `WORKER_URL` in `site/js/config.js` to `http://127.0.0.1:8787` while testing
 - New student accounts start as `pending` until staff activates / grants a course.
 - **Suspended** users are rejected on course list, video URL, and progress (not only at login).
 - Private video URLs expire (default 1 hour).
-- Browser “Failed to fetch” on **API** calls usually means the Worker crashed or is unreachable.
-- Browser “Failed to fetch” on **video upload** usually means the direct Cloudinary POST failed (network, file size, timeout) — compress the file or upload via Cloudinary console and paste `public_id`.
+- Download blocking in the browser is **best-effort** (`controlsList`, no context menu) — not DRM.
 - Do **not** proxy large videos through the Worker (body limit ~100 MB; direct signed upload is preferred).
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| Admin UI **Failed to fetch** | Worker may be down or throwing. Deploy: `npx wrangler deploy`. Health: `/api/health`. |
+| `error code: 1101` from Cloudflare | Uncaught exception in Worker. Ensure handlers are `return await handle…` so `try/catch` applies. Redeploy latest `src/index.js`. |
+| Unauthenticated `GET /api/admin/students` | Should return **JSON** `{"error":"Não autorizado."}` with **401** (with CORS), not 1101. |
+| Missing tables / “no such table” | `npx wrangler d1 execute academiasemente-db --remote --file=./schema.sql` |
+| 401 after login works once then fails | Log out and log in again (token / JWT_SECRET). |
+| Video upload Failed to fetch | Direct Cloudinary POST failed (size/network). Compress or upload in Cloudinary console and paste `public_id`. |

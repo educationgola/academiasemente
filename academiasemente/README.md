@@ -27,8 +27,8 @@ Health check: https://academiasemente.educationgola.workers.dev/api/health
 - Contact form → WhatsApp
 - **Inscrição** form → saved to admin (**Inscrições**); monthly price + payment method (Referência Multicaixa / IBAN / Express)
 - **Checkout** orders → saved to admin (**Encomendas**); same payment methods
-- Student area (`conta.html`): Google + email/password, private videos, progress/resume, profile
-- Admin panel (`admin.html`): Alunos, Inscrições, Encomendas, Cursos & Vídeos, Guia
+- **Student app** (`conta.html`): product-style shell (bottom nav), Google + email/password, private videos, progress/resume, in-app notifications, certificates, profile
+- **Admin app** (`admin.html`): product-style shell (desktop sidebar + mobile bottom tabs) — Alunos, Inscrições, Encomendas, Cursos, Avisos, Guia; search/filters; pending badges
 
 ## Contact
 - WhatsApp: +244 945 574 700
@@ -100,6 +100,19 @@ npx wrangler deploy
 
 Do **not** run `wrangler deploy` from the project root or `site/` — that triggers a static-site wizard, not the Worker.
 
+**After schema changes** (e.g. `notifications`, `certificates` tables), always re-run `schema.sql` **then** `wrangler deploy`.
+
+**Git path tip:** from repo root use `git add .` (not `academiasemente/` if you are already inside that folder). Worker deploys from local files via `wrangler`; Pages deploys from GitHub push.
+
+### Troubleshooting “Failed to fetch” (admin / student API)
+
+| Symptom | Likely cause | Fix |
+|---------|--------------|-----|
+| Admin lists show **Failed to fetch** | Worker exception (CF **1101**) or Worker offline | `cd api && npx wrangler deploy`; check `/api/health` |
+| 401 after deploy | Session expired / wrong token | Log out of admin/conta and log in again |
+| Health OK but admin 401 | Expected without Bearer token | Login first; `curl` without token should return JSON `{"error":"Não autorizado."}` **not** `error code: 1101` |
+| Schema errors in logs | Missing tables | `npx wrangler d1 execute academiasemente-db --remote --file=./schema.sql` |
+
 ### Local preview (website)
 ```bash
 cd site
@@ -122,9 +135,24 @@ python3 -m http.server 8080
 - Backend: Worker `/api/auth/*` + D1 `users` table
 - New accounts are **pending** until staff grants a course (or sets status) in `admin.html`
 - **Suspended** accounts cannot list courses or open videos (even with an existing session)
-- Dashboard: watch progress, resume, course %, expand/collapse, profile (name/phone/password)
+- **App shell:** bottom tabs — Cursos · Avisos · Certificados · Perfil
+- Courses: progress %, resume (“Continuar”), expand/collapse video list
+- Video player: signed Cloudinary URLs; `controlsList` nodownload; context-menu blocked (best-effort, not DRM)
+- **Notifications:** in-app list + unread dots (bell + tab); auto on course grant and certificate issue
+- **Certificates:** auto-issued when a course reaches 100% completed videos; printable from Certificados (or “Obter certificado” on the course card)
+- Profile: name, phone, password; Sair
 - Google Console → Authorized JavaScript origins must include `https://academiasemente.pages.dev` (redirect URIs not needed)
-- Login and dashboard views must not show at the same time (`[hidden]` CSS fix in `conta.css`)
+
+## Admin panel
+
+- Page: `site/admin.html`
+- **Desktop:** dark left sidebar · **Mobile:** bottom tab bar
+- **Alunos:** search, status filter, grant/revoke, edit, delete, Limpar probes
+- **Inscrições / Encomendas:** status filter + search; Concluir / WhatsApp / Apagar
+- **Cursos & Vídeos:** CRUD, Cloudinary upload/sign, soft-delete/restore
+- **Avisos:** send notification to one student, or broadcast to all **active** students
+- **Guia:** staff quick reference
+- Pending counts: badges on sidebar / dots on mobile tabs (`GET /api/admin/summary`)
 
 Secrets (Worker only, never in git): `JWT_SECRET`, `ADMIN_PASSWORD`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`.  
 See `api/README.md` for full setup.
