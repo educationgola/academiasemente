@@ -25,6 +25,24 @@ Copy the `database_id` into `wrangler.toml`.
 npx wrangler d1 execute academiasemente-db --remote --file=./schema.sql
 ```
 
+**Existing production DB:** re-running the full `schema.sql` is safe (`IF NOT EXISTS`).  
+To add only watch progress on an already-migrated DB:
+
+```bash
+npx wrangler d1 execute academiasemente-db --remote --command="
+CREATE TABLE IF NOT EXISTS watch_progress (
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  video_id TEXT NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
+  position_seconds REAL NOT NULL DEFAULT 0,
+  completed INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, video_id)
+);
+CREATE INDEX IF NOT EXISTS idx_watch_progress_user ON watch_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_watch_progress_video ON watch_progress(video_id);
+"
+```
+
 ### 3. Set secrets (never commit these)
 ```bash
 npx wrangler secret put JWT_SECRET
@@ -87,8 +105,11 @@ Set `WORKER_URL` in `site/js/config.js` to `http://127.0.0.1:8787` while testing
 | POST | /api/auth/login | — | Email/password login |
 | POST | /api/auth/google | — | Google ID token → session |
 | GET | /api/auth/me | Student | Current user |
-| GET | /api/student/courses | Student | Granted courses + active videos |
-| GET | /api/student/videos/:id/url | Student | Signed Cloudinary URL (expires ~1h) |
+| GET | /api/student/courses | Student | Granted courses + videos + progress + last_watched |
+| GET | /api/student/videos/:id/url | Student | Signed Cloudinary URL + resume position |
+| POST | /api/student/videos/:id/progress | Student | Save watch position / completed |
+| POST | /api/student/profile | Student | Update name + phone |
+| POST | /api/student/password | Student | Change or set password |
 
 ### Admin — auth & catalog
 

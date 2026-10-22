@@ -126,6 +126,27 @@ See `api/README.md` for full setup.
 
 ## Changelog
 
+### 2026-10-22 — Student dashboard improvements
+**What changed**
+- Watch progress + resume (D1 `watch_progress`, save every ~10s / on pause / on close)
+- Course progress bars (X/Y vídeos · %) and per-video progress
+- “Continuar de onde parou” card from last incomplete watch
+- Expand/collapse course lists; Prev/Next in video modal
+- Profile panel: edit name/phone; change or set password
+- Status colour badges; stronger pending banner + WhatsApp CTA
+- Empty-state CTAs (inscrição + WhatsApp); loading skeletons; offline banner
+- Escape / backdrop close modal; mobile full-screen player
+
+**Deploy notes**
+1. Apply schema (or migration in `api/README.md`) → D1 `watch_progress`
+2. Deploy Worker (`npx wrangler deploy` from `api/`)
+3. Push site → Pages (or rely on GitHub auto-deploy)
+
+**Files changed:**
+- `api/schema.sql`, `api/src/index.js`, `api/README.md`
+- `site/conta.html`, `site/js/conta.js`, `site/css/conta.css`
+- `README.md`
+
 ### 2026-10-21 — Full admin panel + student tools
 **What changed**
 - Admin students: search, status filter, inline status change, edit modal (name/phone/status + course history), grant/revoke, permanent delete, “Limpar probes”

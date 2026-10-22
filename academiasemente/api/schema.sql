@@ -74,3 +74,16 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+
+-- Student watch progress (resume + course %)
+CREATE TABLE IF NOT EXISTS watch_progress (
+  user_id          TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  video_id         TEXT NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
+  position_seconds REAL NOT NULL DEFAULT 0,
+  completed        INTEGER NOT NULL DEFAULT 0,  -- 0 | 1
+  updated_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, video_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_watch_progress_user ON watch_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_watch_progress_video ON watch_progress(video_id);

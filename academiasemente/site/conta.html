@@ -32,18 +32,15 @@
         <h1 class="auth-title">Entrar</h1>
         <p class="auth-subtitle">Aceda aos seus cursos e vídeos privados</p>
 
-        <!-- Google button (rendered by conta.js with client_id from config) -->
         <div id="googleBtnWrapper" class="google-btn-wrapper"></div>
 
         <div class="auth-divider"><span>ou</span></div>
 
-        <!-- Tabs: Login / Sign up -->
         <div class="auth-tabs">
           <button type="button" class="auth-tab active" data-tab="login">Entrar</button>
           <button type="button" class="auth-tab" data-tab="register">Criar conta</button>
         </div>
 
-        <!-- Login form -->
         <form id="loginForm" class="auth-form" autocomplete="on">
           <label class="field">
             <span>Email</span>
@@ -57,7 +54,6 @@
           <button type="submit" class="btn-primary btn-block">Entrar</button>
         </form>
 
-        <!-- Register form -->
         <form id="registerForm" class="auth-form" hidden autocomplete="on">
           <label class="field">
             <span>Nome</span>
@@ -86,22 +82,98 @@
           <img id="userAvatar" class="user-avatar" src="" alt="" hidden>
           <div>
             <h1 class="dash-greeting">Olá, <span id="userName">Aluno</span></h1>
-            <p class="dash-status">Estado da conta: <strong id="userStatus">—</strong></p>
+            <p class="dash-status">
+              Estado:
+              <span id="userStatusBadge" class="status-badge status-pending">—</span>
+            </p>
           </div>
         </div>
-        <button type="button" class="btn-outline" id="logoutBtn">Sair</button>
+        <div class="dash-top-actions">
+          <button type="button" class="btn-outline btn-sm" id="profileBtn">Perfil</button>
+          <button type="button" class="btn-outline btn-sm" id="logoutBtn">Sair</button>
+        </div>
       </div>
 
       <div id="pendingBanner" class="pending-banner" hidden>
-        <strong>Conta pendente de activação.</strong>
-        A equipa da Academia Semente irá activar o seu acesso após confirmação. Se já pagou ou enviou o comprovativo, aguarde ou contacte-nos pelo WhatsApp.
+        <strong>Conta pendente de activação</strong>
+        <p>A equipa da Academia Semente irá activar o seu acesso após confirmação do pagamento ou inscrição.</p>
+        <p class="pending-steps">Se já pagou ou enviou o comprovativo, aguarde ou contacte-nos.</p>
+        <a
+          id="pendingWhatsApp"
+          class="btn-whatsapp"
+          href="https://wa.me/244945574700?text=Ol%C3%A1%2C%20a%20minha%20conta%20est%C3%A1%20pendente.%20J%C3%A1%20enviei%20o%20comprovativo%20%2F%20fiz%20a%20inscri%C3%A7%C3%A3o."
+          target="_blank"
+          rel="noopener"
+        >Contactar no WhatsApp</a>
       </div>
 
-      <h2 class="section-title">Os meus cursos</h2>
-      <div id="coursesList" class="courses-list">
-        <!-- filled by JS -->
+      <div id="offlineBanner" class="offline-banner" hidden>
+        Sem ligação ao servidor. Verifique a internet e se o serviço está activo.
       </div>
-      <p id="noCourses" class="empty-state" hidden>Ainda não tem cursos atribuídos. Contacte a academia após a inscrição.</p>
+
+      <div id="continueCard" class="continue-card" hidden>
+        <div class="continue-label">Continuar de onde parou</div>
+        <button type="button" class="continue-btn" id="continueBtn">
+          <span class="continue-title" id="continueTitle">—</span>
+          <span class="continue-meta" id="continueMeta"></span>
+        </button>
+      </div>
+
+      <div class="section-head">
+        <h2 class="section-title">Os meus cursos</h2>
+      </div>
+      <div id="coursesList" class="courses-list">
+      </div>
+      <div id="noCourses" class="empty-state-box" hidden>
+        <p class="empty-state-title">Ainda não tem cursos atribuídos</p>
+        <p class="empty-state-text">Após a inscrição e activação, os seus cursos aparecem aqui. Pode contactar a academia ou ver os planos no site.</p>
+        <div class="empty-state-actions">
+          <a href="inscricao.html" class="btn-primary btn-inline">Ver inscrição</a>
+          <a href="https://wa.me/244945574700" target="_blank" rel="noopener" class="btn-outline btn-inline">WhatsApp</a>
+        </div>
+      </div>
+
+      <div id="profilePanel" class="profile-panel" hidden>
+        <div class="profile-panel-head">
+          <h2 class="section-title">O meu perfil</h2>
+          <button type="button" class="btn-text" id="profileClose">Fechar</button>
+        </div>
+
+        <form id="profileForm" class="auth-form profile-form">
+          <label class="field">
+            <span>Nome</span>
+            <input type="text" name="name" id="profileName" autocomplete="name" placeholder="O seu nome">
+          </label>
+          <label class="field">
+            <span>Email</span>
+            <input type="email" id="profileEmail" disabled>
+          </label>
+          <label class="field">
+            <span>Telefone / WhatsApp</span>
+            <input type="tel" name="phone" id="profilePhone" autocomplete="tel" placeholder="+244 …" inputmode="tel">
+          </label>
+          <p class="auth-error" id="profileError" hidden></p>
+          <p class="auth-success" id="profileSuccess" hidden></p>
+          <button type="submit" class="btn-primary btn-block">Guardar perfil</button>
+        </form>
+
+        <div class="profile-password-block">
+          <h3 class="profile-subhead" id="passwordHeading">Palavra-passe</h3>
+          <form id="passwordForm" class="auth-form profile-form">
+            <label class="field" id="currentPasswordField">
+              <span>Palavra-passe actual</span>
+              <input type="password" name="current_password" id="currentPassword" autocomplete="current-password" placeholder="••••••••">
+            </label>
+            <label class="field">
+              <span>Nova palavra-passe</span>
+              <input type="password" name="new_password" id="newPassword" required minlength="6" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
+            </label>
+            <p class="auth-error" id="passwordError" hidden></p>
+            <p class="auth-success" id="passwordSuccess" hidden></p>
+            <button type="submit" class="btn-outline btn-block" id="passwordSubmitBtn">Alterar palavra-passe</button>
+          </form>
+        </div>
+      </div>
     </section>
 
     <!-- ========== VIDEO PLAYER MODAL ========== -->
@@ -118,6 +190,10 @@
             playsinline
             preload="metadata"
           ></video>
+        </div>
+        <div class="video-modal-footer">
+          <button type="button" class="btn-outline btn-sm" id="videoPrev" hidden>← Anterior</button>
+          <button type="button" class="btn-primary btn-sm" id="videoNext" hidden>Seguinte →</button>
         </div>
       </div>
     </div>

@@ -38,6 +38,12 @@ export default {
         const videoId = path.split('/')[4];
         return handleSignedVideoUrl(request, env, videoId);
       }
+      if (path.match(/^\/api\/student\/videos\/[^/]+\/progress$/) && request.method === 'POST') {
+        const videoId = path.split('/')[4];
+        return handleSaveProgress(request, env, videoId);
+      }
+      if (path === '/api/student/profile' && request.method === 'POST') return handleUpdateProfile(request, env);
+      if (path === '/api/student/password' && request.method === 'POST') return handleChangePassword(request, env);
 
       // ---------- Admin (password) ----------
       if (path === '/api/admin/login' && request.method === 'POST') return handleAdminLogin(request, env);
@@ -247,7 +253,7 @@ async function handleRegister(request, env) {
   const token = await signToken({ sub: id, email, role: 'student' }, env.JWT_SECRET);
   return json({
     token,
-    user: { id, email, name, status: 'pending', picture: null },
+    user: { id, email, name, status: 'pending', picture: null, phone: null, has_password: true },
   });
 }
 
@@ -278,6 +284,8 @@ async function handleLogin(request, env) {
       name: user.name,
       picture: user.picture,
       status: user.status,
+      phone: user.phone || null,
+      has_password: !!user.password_hash,
     },
   });
 }
@@ -327,6 +335,9 @@ async function handleGoogle(request, env) {
 
   if (user.status === 'suspended') return json({ error: 'Conta suspensa.' }, 403);
 
+  // Refresh user row after possible link update
+  user = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(user.id).first();
+
   const token = await signToken({ sub: user.id, email: user.email, role: 'student' }, env.JWT_SECRET);
   return json({
     token,
@@ -336,16 +347,32 @@ async function handleGoogle(request, env) {
       name: user.name || name,
       picture: user.picture || picture,
       status: user.status,
+      phone: user.phone || null,
+      has_password: !!user.password_hash,
     },
   });
 }
 
 async function handleMe(request, env) {
   const payload = await requireStudent(request, env);
-  const user = await env.DB.prepare('SELECT id, email, name, picture, status, phone, created_at FROM users WHERE id = ?')
-    .bind(payload.sub).first();
+  const user = await env.DB.prepare(
+    'SELECT id, email, name, picture, status, phone, created_at, password_hash FROM users WHERE id = ?'
+  )
+    .bind(payload.sub)
+    .first();
   if (!user) return json({ error: 'User not found' }, 404);
-  return json({ user });
+  return json({
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      picture: user.picture,
+      status: user.status,
+      phone: user.phone,
+      created_at: user.created_at,
+      has_password: !!user.password_hash,
+    },
+  });
 }
 
 // ==================== Student handlers ====================
@@ -362,30 +389,219 @@ async function handleStudentCourses(request, env) {
     ORDER BY c.sort_order, c.title_pt
   `).bind(payload.sub).all();
 
-  // Attach videos for each course
+  // Attach videos + progress for each course
   for (const course of courses) {
     const { results: videos } = await env.DB.prepare(`
-      SELECT id, title_pt, title_en, description_pt, duration_seconds, sort_order
-      FROM videos
-      WHERE course_id = ? AND active = 1
-      ORDER BY sort_order, title_pt
-    `).bind(course.id).all();
-    course.videos = videos;
+      SELECT v.id, v.title_pt, v.title_en, v.description_pt, v.duration_seconds, v.sort_order,
+             COALESCE(wp.position_seconds, 0) AS position_seconds,
+             COALESCE(wp.completed, 0) AS completed,
+             wp.updated_at AS progress_updated_at
+      FROM videos v
+      LEFT JOIN watch_progress wp ON wp.video_id = v.id AND wp.user_id = ?
+      WHERE v.course_id = ? AND v.active = 1
+      ORDER BY v.sort_order, v.title_pt
+    `).bind(payload.sub, course.id).all();
+
+    const total = videos.length;
+    const done = videos.filter((v) => v.completed).length;
+    course.videos = videos.map((v) => ({
+      id: v.id,
+      title_pt: v.title_pt,
+      title_en: v.title_en,
+      description_pt: v.description_pt,
+      duration_seconds: v.duration_seconds,
+      sort_order: v.sort_order,
+      position_seconds: Number(v.position_seconds) || 0,
+      completed: !!v.completed,
+      progress_updated_at: v.progress_updated_at || null,
+    }));
+    course.progress = {
+      total,
+      completed: done,
+      percent: total ? Math.round((done / total) * 100) : 0,
+    };
+
+    // First incomplete video for "Continuar"
+    const next = course.videos.find((v) => !v.completed) || null;
+    course.continue_video = next
+      ? { id: next.id, title_pt: next.title_pt, title_en: next.title_en, position_seconds: next.position_seconds }
+      : null;
   }
 
-  return json({ courses });
+  // Global last watched (most recent progress across all courses)
+  let lastWatched = null;
+  try {
+    lastWatched = await env.DB.prepare(`
+      SELECT v.id, v.title_pt, v.title_en, v.duration_seconds, c.id AS course_id, c.title_pt AS course_title_pt,
+             wp.position_seconds, wp.completed, wp.updated_at
+      FROM watch_progress wp
+      JOIN videos v ON v.id = wp.video_id AND v.active = 1
+      JOIN courses c ON c.id = v.course_id AND c.active = 1
+      JOIN user_courses uc ON uc.course_id = c.id AND uc.user_id = wp.user_id AND uc.status = 'active'
+      WHERE wp.user_id = ? AND wp.completed = 0 AND wp.position_seconds > 5
+      ORDER BY wp.updated_at DESC
+      LIMIT 1
+    `).bind(payload.sub).first();
+  } catch (_) {
+    // Table may not exist yet on first deploy
+    lastWatched = null;
+  }
+
+  return json({
+    courses,
+    last_watched: lastWatched
+      ? {
+          id: lastWatched.id,
+          title_pt: lastWatched.title_pt,
+          title_en: lastWatched.title_en,
+          duration_seconds: lastWatched.duration_seconds,
+          course_id: lastWatched.course_id,
+          course_title_pt: lastWatched.course_title_pt,
+          position_seconds: Number(lastWatched.position_seconds) || 0,
+        }
+      : null,
+  });
+}
+
+async function handleSaveProgress(request, env, videoId) {
+  const payload = await requireStudent(request, env);
+  const body = await readBody(request);
+
+  // Ownership check
+  const row = await env.DB.prepare(`
+    SELECT v.id, v.duration_seconds
+    FROM videos v
+    JOIN user_courses uc ON uc.course_id = v.course_id
+    WHERE v.id = ? AND uc.user_id = ? AND uc.status = 'active' AND v.active = 1
+  `).bind(videoId, payload.sub).first();
+
+  if (!row) return json({ error: 'Acesso negado ou vídeo não encontrado.' }, 403);
+
+  let position = Number(body.position_seconds);
+  if (!Number.isFinite(position) || position < 0) position = 0;
+  position = Math.floor(position);
+
+  const duration = Number(row.duration_seconds) || 0;
+  let completed = body.completed === true || body.completed === 1 || body.completed === '1';
+  // Auto-complete near end (≥ 90% or within 15s of end)
+  if (duration > 0 && (position / duration >= 0.9 || duration - position <= 15)) {
+    completed = true;
+    position = duration;
+  }
+
+  try {
+    await env.DB.prepare(`
+      INSERT INTO watch_progress (user_id, video_id, position_seconds, completed, updated_at)
+      VALUES (?, ?, ?, ?, datetime('now'))
+      ON CONFLICT(user_id, video_id) DO UPDATE SET
+        position_seconds = excluded.position_seconds,
+        completed = CASE
+          WHEN watch_progress.completed = 1 THEN 1
+          ELSE excluded.completed
+        END,
+        updated_at = datetime('now')
+    `).bind(payload.sub, videoId, position, completed ? 1 : 0).run();
+  } catch (err) {
+    // If table missing, surface a clear error
+    if (String(err.message || '').includes('no such table')) {
+      return json({ error: 'Tabela watch_progress em falta. Execute schema.sql no D1.' }, 500);
+    }
+    throw err;
+  }
+
+  return json({ ok: true, position_seconds: position, completed });
+}
+
+async function handleUpdateProfile(request, env) {
+  const payload = await requireStudent(request, env);
+  const body = await readBody(request);
+  const name = body.name != null ? String(body.name).trim() : null;
+  const phone = body.phone != null ? String(body.phone).trim() : null;
+
+  if (name !== null && name.length > 120) {
+    return json({ error: 'Nome demasiado longo.' }, 400);
+  }
+  if (phone !== null && phone.length > 40) {
+    return json({ error: 'Telefone inválido.' }, 400);
+  }
+
+  const user = await env.DB.prepare('SELECT id, email, name, picture, status, phone, password_hash FROM users WHERE id = ?')
+    .bind(payload.sub).first();
+  if (!user) return json({ error: 'User not found' }, 404);
+
+  const newName = name !== null ? name || null : user.name;
+  const newPhone = phone !== null ? phone || null : user.phone;
+
+  await env.DB.prepare(
+    `UPDATE users SET name = ?, phone = ?, updated_at = datetime('now') WHERE id = ?`
+  ).bind(newName, newPhone, user.id).run();
+
+  return json({
+    user: {
+      id: user.id,
+      email: user.email,
+      name: newName,
+      picture: user.picture,
+      status: user.status,
+      phone: newPhone,
+      has_password: !!user.password_hash,
+    },
+  });
+}
+
+async function handleChangePassword(request, env) {
+  const payload = await requireStudent(request, env);
+  const body = await readBody(request);
+  const current = body.current_password || '';
+  const next = body.new_password || '';
+
+  if (!next || next.length < 6) {
+    return json({ error: 'Nova palavra-passe deve ter pelo menos 6 caracteres.' }, 400);
+  }
+
+  const user = await env.DB.prepare('SELECT id, email, name, picture, status, phone, password_hash FROM users WHERE id = ?')
+    .bind(payload.sub).first();
+  if (!user) return json({ error: 'User not found' }, 404);
+
+  if (user.password_hash) {
+    if (!current) return json({ error: 'Indique a palavra-passe actual.' }, 400);
+    const ok = await verifyPassword(current, user.password_hash);
+    if (!ok) return json({ error: 'Palavra-passe actual incorrecta.' }, 401);
+  }
+  // Google-only accounts can set a password without current
+
+  const password_hash = await makePasswordHash(next);
+  await env.DB.prepare(
+    `UPDATE users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?`
+  ).bind(password_hash, user.id).run();
+
+  return json({
+    ok: true,
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      picture: user.picture,
+      status: user.status,
+      phone: user.phone,
+      has_password: true,
+    },
+  });
 }
 
 async function handleSignedVideoUrl(request, env, videoId) {
   const payload = await requireStudent(request, env);
 
-  // Check ownership
+  // Check ownership + return progress for resume
   const row = await env.DB.prepare(`
-    SELECT v.cloudinary_public_id, v.title_pt
+    SELECT v.cloudinary_public_id, v.title_pt, v.duration_seconds,
+           COALESCE(wp.position_seconds, 0) AS position_seconds,
+           COALESCE(wp.completed, 0) AS completed
     FROM videos v
     JOIN user_courses uc ON uc.course_id = v.course_id
+    LEFT JOIN watch_progress wp ON wp.video_id = v.id AND wp.user_id = ?
     WHERE v.id = ? AND uc.user_id = ? AND uc.status = 'active' AND v.active = 1
-  `).bind(videoId, payload.sub).first();
+  `).bind(payload.sub, videoId, payload.sub).first();
 
   if (!row) return json({ error: 'Acesso negado ou vídeo não encontrado.' }, 403);
 
@@ -410,6 +626,9 @@ async function handleSignedVideoUrl(request, env, videoId) {
   return json({
     url,
     title: row.title_pt,
+    duration_seconds: row.duration_seconds || null,
+    position_seconds: Number(row.position_seconds) || 0,
+    completed: !!row.completed,
   });
 }
 
