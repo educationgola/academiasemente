@@ -456,7 +456,7 @@ async function handleStudentPing(request, env) {
     }
     throw err;
   }
-  return json({ ok: true, last_seen_at: new Date().toISOString(), online_window_minutes: 2 });
+  return json({ ok: true, last_seen_at: new Date().toISOString(), online_window_minutes: 10 });
 }
 
 // ==================== Student handlers ====================
@@ -1063,7 +1063,7 @@ async function handleAdminSummary(request, env) {
   ] = await Promise.all([
     count(`SELECT COUNT(*) AS n FROM users`),
     count(`SELECT COUNT(*) AS n FROM users WHERE status = 'pending'`),
-    count(`SELECT COUNT(*) AS n FROM users WHERE last_seen_at IS NOT NULL AND datetime(last_seen_at) >= datetime('now', '-2 minutes')`),
+    count(`SELECT COUNT(*) AS n FROM users WHERE last_seen_at IS NOT NULL AND datetime(last_seen_at) >= datetime('now', '-10 minutes')`),
     count(`SELECT COUNT(*) AS n FROM enrollments WHERE status = 'pending'`),
     count(`SELECT COUNT(*) AS n FROM orders WHERE status = 'pending'`),
     count(`SELECT COUNT(*) AS n FROM contact_messages WHERE status = 'new'`),
@@ -1080,7 +1080,7 @@ async function handleAdminSummary(request, env) {
       messages_new,
       courses,
     },
-    online_window_minutes: 2,
+    online_window_minutes: 10,
   });
 }
 
@@ -1094,7 +1094,7 @@ async function handleListStudents(request, env) {
   let sql = `
     SELECT u.id, u.email, u.name, u.picture, u.status, u.phone, u.last_seen_at, u.created_at, u.updated_at,
            (SELECT COUNT(*) FROM user_courses uc WHERE uc.user_id = u.id AND uc.status = 'active') AS courses_count,
-           CASE WHEN u.last_seen_at IS NOT NULL AND datetime(u.last_seen_at) >= datetime('now', '-2 minutes') THEN 1 ELSE 0 END AS is_online
+           CASE WHEN u.last_seen_at IS NOT NULL AND datetime(u.last_seen_at) >= datetime('now', '-10 minutes') THEN 1 ELSE 0 END AS is_online
     FROM users u
   `;
   const where = [];
@@ -1138,7 +1138,7 @@ async function handleListStudents(request, env) {
       q: q || null,
       status: status || null,
       count: list.length,
-      online_window_minutes: 2,
+      online_window_minutes: 10,
       online_count: list.filter((s) => s.is_online).length,
     },
   });

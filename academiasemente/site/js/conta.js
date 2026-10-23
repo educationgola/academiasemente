@@ -164,7 +164,7 @@
   }
 
 
-  // ---------- Presence heartbeat (admin "online" within 2 min) ----------
+  // ---------- Presence heartbeat (admin "online" within 10 min) ----------
   var presenceTimer = null;
   var PRESENCE_INTERVAL_MS = 45000;
 

@@ -193,7 +193,7 @@ CREATE INDEX IF NOT EXISTS idx_contact_messages_status ON contact_messages(statu
 CREATE INDEX IF NOT EXISTS idx_contact_messages_created ON contact_messages(created_at);
 
 
--- Presence: online = last_seen_at within last 2 minutes
+-- Presence: online = last_seen_at within last 10 minutes
 -- For existing DBs, also run once:
 --   ALTER TABLE users ADD COLUMN last_seen_at TEXT;
 CREATE INDEX IF NOT EXISTS idx_users_last_seen ON users(last_seen_at);

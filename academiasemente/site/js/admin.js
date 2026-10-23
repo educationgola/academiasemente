@@ -207,10 +207,10 @@
         onlineLine.innerHTML =
           '<span class="online-dot" aria-hidden="true"></span> ' +
           (onlineN === 0
-            ? 'Nenhum aluno online neste momento (janela de 2 min).'
+            ? 'Nenhum aluno online neste momento (janela de 10 min).'
             : onlineN === 1
-              ? '<strong>1 aluno</strong> online agora (actividade nos últimos 2 min).'
-              : '<strong>' + onlineN + ' alunos</strong> online agora (actividade nos últimos 2 min).');
+              ? '<strong>1 aluno</strong> online agora (actividade nos últimos 10 min).'
+              : '<strong>' + onlineN + ' alunos</strong> online agora (actividade nos últimos 10 min).');
       }
     } catch (_) {
       /* non-blocking */
