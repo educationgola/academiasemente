@@ -152,10 +152,22 @@
     btn.addEventListener('click', () => switchPanel(btn.dataset.panel));
   });
 
+  let summaryPollTimer = null;
+  function startSummaryPoll() {
+    if (summaryPollTimer) return;
+    summaryPollTimer = setInterval(() => {
+      loadSummary();
+      // Refresh student list when viewing Alunos so online dots stay fresh
+      const studentsPanel = document.getElementById('panel-students');
+      if (studentsPanel && !studentsPanel.hidden) loadStudents();
+    }, 60000);
+  }
+
   function showApp() {
     loginView.hidden = true;
     appView.hidden = false;
     loadSummary();
+    startSummaryPoll();
     loadStudents();
     loadCourses();
     loadEnrollments();
@@ -182,12 +194,46 @@
           el.hidden = n <= 0;
         }
       });
+      const onlineN = Number(counts.students_online) || 0;
+      const onlineBadge = document.getElementById('studentsOnlineBadge');
+      const onlineText = document.getElementById('studentsOnlineText');
+      if (onlineBadge && onlineText) {
+        onlineText.textContent = onlineN === 1 ? '1 online' : onlineN + ' online';
+        onlineBadge.hidden = false;
+      }
+      const onlineLine = document.getElementById('studentsOnlineLine');
+      if (onlineLine) {
+        onlineLine.hidden = false;
+        onlineLine.innerHTML =
+          '<span class="online-dot" aria-hidden="true"></span> ' +
+          (onlineN === 0
+            ? 'Nenhum aluno online neste momento (janela de 2 min).'
+            : onlineN === 1
+              ? '<strong>1 aluno</strong> online agora (actividade nos últimos 2 min).'
+              : '<strong>' + onlineN + ' alunos</strong> online agora (actividade nos últimos 2 min).');
+      }
     } catch (_) {
       /* non-blocking */
     }
   }
 
   // ==================== Students ====================
+
+  function formatLastSeen(iso) {
+    if (!iso) return '—';
+    try {
+      const d = new Date(iso.includes('T') ? iso : iso.replace(' ', 'T') + 'Z');
+      if (Number.isNaN(d.getTime())) return String(iso).slice(0, 16);
+      const sec = Math.round((Date.now() - d.getTime()) / 1000);
+      if (sec < 60) return 'há instantes';
+      if (sec < 3600) return 'há ' + Math.floor(sec / 60) + ' min';
+      if (sec < 86400) return 'há ' + Math.floor(sec / 3600) + ' h';
+      return d.toLocaleString('pt-AO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    } catch (_) {
+      return String(iso).slice(0, 16);
+    }
+  }
+
 
   const studentSearch = document.getElementById('studentSearch');
   const studentStatusFilter = document.getElementById('studentStatusFilter');
@@ -210,7 +256,11 @@
     const q = ((studentSearch && studentSearch.value) || '').trim().toLowerCase();
     const st = (studentStatusFilter && studentStatusFilter.value) || '';
     return studentsCache.filter((s) => {
-      if (st && s.status !== st) return false;
+      if (st === 'online') {
+        if (!s.is_online) return false;
+      } else if (st && s.status !== st) {
+        return false;
+      }
       if (!q) return true;
       const hay = ((s.name || '') + ' ' + (s.email || '') + ' ' + (s.phone || '')).toLowerCase();
       return hay.includes(q);
@@ -257,9 +307,12 @@
               return `
             <tr>
               <td data-label="Aluno">
-                <strong>${esc(s.name || '—')}</strong><br>
+                <strong>${s.is_online ? '<span class="online-dot" title="Online"></span> ' : ''}${esc(s.name || '—')}</strong>
+                ${s.is_online ? '<span class="chip chip-online">Online</span>' : ''}
+                <br>
                 <span class="student-email">${esc(s.email)}</span>
                 ${s.phone ? `<br><span class="student-email">${esc(s.phone)}</span>` : ''}
+                ${s.last_seen_at && !s.is_online ? `<br><span class="student-email muted">Visto: ${esc(formatLastSeen(s.last_seen_at))}</span>` : ''}
               </td>
               <td data-label="Estado">
                 <select class="status-select" data-status-id="${s.id}" title="Alterar estado">
@@ -326,7 +379,12 @@
     try {
       const data = await api('/admin/students');
       studentsCache = data.students || [];
+      // Normalize is_online from API
+      studentsCache.forEach((s) => {
+        s.is_online = s.is_online === true || s.is_online === 1 || s.is_online === '1';
+      });
       renderStudents();
+      loadSummary();
     } catch (err) {
       if (err.status === 401) {
         clearToken();

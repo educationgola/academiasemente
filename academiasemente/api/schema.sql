@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
   google_id     TEXT UNIQUE,
   phone         TEXT,
   status        TEXT NOT NULL DEFAULT 'pending', -- pending | active | suspended
+  last_seen_at  TEXT,                           -- student presence heartbeat
   created_at    TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -190,3 +191,9 @@ CREATE TABLE IF NOT EXISTS contact_messages (
 
 CREATE INDEX IF NOT EXISTS idx_contact_messages_status ON contact_messages(status);
 CREATE INDEX IF NOT EXISTS idx_contact_messages_created ON contact_messages(created_at);
+
+
+-- Presence: online = last_seen_at within last 2 minutes
+-- For existing DBs, also run once:
+--   ALTER TABLE users ADD COLUMN last_seen_at TEXT;
+CREATE INDEX IF NOT EXISTS idx_users_last_seen ON users(last_seen_at);

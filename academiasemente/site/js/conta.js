@@ -163,7 +163,42 @@
     return escapeHtml(s).replace(/'/g, '&#39;');
   }
 
+
+  // ---------- Presence heartbeat (admin "online" within 2 min) ----------
+  var presenceTimer = null;
+  var PRESENCE_INTERVAL_MS = 45000;
+
+  function sendPresencePing() {
+    if (!getToken()) return;
+    api('/api/student/ping', { method: 'POST', body: {} }).catch(function () {
+      /* non-blocking */
+    });
+  }
+
+  function startPresenceHeartbeat() {
+    stopPresenceHeartbeat();
+    sendPresencePing();
+    presenceTimer = setInterval(function () {
+      if (document.visibilityState === 'hidden') return;
+      sendPresencePing();
+    }, PRESENCE_INTERVAL_MS);
+  }
+
+  function stopPresenceHeartbeat() {
+    if (presenceTimer) {
+      clearInterval(presenceTimer);
+      presenceTimer = null;
+    }
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && dashboardSection && !dashboardSection.hidden) {
+      sendPresencePing();
+    }
+  });
+
   function showAuth() {
+    stopPresenceHeartbeat();
     if (authSection) authSection.hidden = false;
     if (dashboardSection) dashboardSection.hidden = true;
     if (profilePanel) profilePanel.hidden = true;
@@ -173,6 +208,7 @@
     if (authSection) authSection.hidden = true;
     if (dashboardSection) dashboardSection.hidden = false;
     if (profilePanel) profilePanel.hidden = true;
+    startPresenceHeartbeat();
 
     var nameEl = document.getElementById('userName');
     var badge = document.getElementById('userStatusBadge');

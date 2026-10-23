@@ -46,6 +46,7 @@ export default {
         const videoId = path.split('/')[4];
         return await handleSaveProgress(request, env, videoId);
       }
+      if (path === '/api/student/ping' && request.method === 'POST') return await handleStudentPing(request, env);
       if (path === '/api/student/profile' && request.method === 'POST') return await handleUpdateProfile(request, env);
       if (path === '/api/student/password' && request.method === 'POST') return await handleChangePassword(request, env);
       if (path === '/api/student/notifications' && request.method === 'GET') return await handleListNotifications(request, env);
@@ -435,6 +436,27 @@ async function handleMe(request, env) {
       has_password: !!user.password_hash,
     },
   });
+}
+
+
+async function handleStudentPing(request, env) {
+  const payload = await requireStudent(request, env);
+  if (!env.DB) return json({ error: 'Database not configured' }, 500);
+  try {
+    await env.DB.prepare(
+      `UPDATE users SET last_seen_at = datetime('now') WHERE id = ?`
+    )
+      .bind(payload.sub)
+      .run();
+  } catch (err) {
+    if (String(err.message || '').includes('no such column')) {
+      return json({
+        error: 'Coluna last_seen_at em falta. Execute no D1: ALTER TABLE users ADD COLUMN last_seen_at TEXT;',
+      }, 500);
+    }
+    throw err;
+  }
+  return json({ ok: true, last_seen_at: new Date().toISOString(), online_window_minutes: 2 });
 }
 
 // ==================== Student handlers ====================
@@ -1033,6 +1055,7 @@ async function handleAdminSummary(request, env) {
   const [
     students,
     students_pending,
+    students_online,
     enrollments_pending,
     orders_pending,
     messages_new,
@@ -1040,6 +1063,7 @@ async function handleAdminSummary(request, env) {
   ] = await Promise.all([
     count(`SELECT COUNT(*) AS n FROM users`),
     count(`SELECT COUNT(*) AS n FROM users WHERE status = 'pending'`),
+    count(`SELECT COUNT(*) AS n FROM users WHERE last_seen_at IS NOT NULL AND datetime(last_seen_at) >= datetime('now', '-2 minutes')`),
     count(`SELECT COUNT(*) AS n FROM enrollments WHERE status = 'pending'`),
     count(`SELECT COUNT(*) AS n FROM orders WHERE status = 'pending'`),
     count(`SELECT COUNT(*) AS n FROM contact_messages WHERE status = 'new'`),
@@ -1050,11 +1074,13 @@ async function handleAdminSummary(request, env) {
     counts: {
       students,
       students_pending,
+      students_online,
       enrollments_pending,
       orders_pending,
       messages_new,
       courses,
     },
+    online_window_minutes: 2,
   });
 }
 
@@ -1066,8 +1092,9 @@ async function handleListStudents(request, env) {
   const limit = Math.min(500, Math.max(1, parseInt(url.searchParams.get('limit') || '500', 10) || 500));
 
   let sql = `
-    SELECT u.id, u.email, u.name, u.picture, u.status, u.phone, u.created_at, u.updated_at,
-           (SELECT COUNT(*) FROM user_courses uc WHERE uc.user_id = u.id AND uc.status = 'active') AS courses_count
+    SELECT u.id, u.email, u.name, u.picture, u.status, u.phone, u.last_seen_at, u.created_at, u.updated_at,
+           (SELECT COUNT(*) FROM user_courses uc WHERE uc.user_id = u.id AND uc.status = 'active') AS courses_count,
+           CASE WHEN u.last_seen_at IS NOT NULL AND datetime(u.last_seen_at) >= datetime('now', '-2 minutes') THEN 1 ELSE 0 END AS is_online
     FROM users u
   `;
   const where = [];
@@ -1101,9 +1128,19 @@ async function handleListStudents(request, env) {
     s.course_history = all;
   }
 
+  const list = results || [];
+  for (const s of list) {
+    s.is_online = Number(s.is_online) === 1;
+  }
   return json({
-    students: results || [],
-    meta: { q: q || null, status: status || null, count: (results || []).length },
+    students: list,
+    meta: {
+      q: q || null,
+      status: status || null,
+      count: list.length,
+      online_window_minutes: 2,
+      online_count: list.filter((s) => s.is_online).length,
+    },
   });
 }
 
