@@ -173,3 +173,20 @@ CREATE TABLE IF NOT EXISTS site_content (
   data_json   TEXT NOT NULL DEFAULT '{}',
   updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+
+-- Contact form messages (admin tab: Mensagens)
+CREATE TABLE IF NOT EXISTS contact_messages (
+  id          TEXT PRIMARY KEY,
+  name        TEXT NOT NULL,
+  email       TEXT,
+  phone       TEXT,
+  subject     TEXT,
+  message     TEXT NOT NULL,
+  status      TEXT NOT NULL DEFAULT 'new',  -- new | read | done
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_contact_messages_status ON contact_messages(status);
+CREATE INDEX IF NOT EXISTS idx_contact_messages_created ON contact_messages(created_at);

@@ -40,6 +40,7 @@
       </label>
       <p class="error" id="loginError" hidden></p>
       <button type="submit">Entrar</button>
+      <a href="index.html" class="login-site-link">← Voltar ao site</a>
     </form>
   </div>
 
@@ -68,6 +69,11 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
           <span>Encomendas</span>
           <span class="nav-count" data-count="orders_pending" hidden></span>
+        </button>
+        <button type="button" class="nav-btn" data-panel="messages">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>Mensagens</span>
+          <span class="nav-count" data-count="messages_new" hidden></span>
         </button>
         <button type="button" class="nav-btn" data-panel="courses">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
@@ -177,7 +183,32 @@
           </div>
         </section>
 
-        <!-- Courses -->
+        
+        <!-- Contact messages -->
+        <section id="panel-messages" class="panel" hidden>
+          <div class="panel-head">
+            <div class="panel-head-text">
+              <p class="panel-eyebrow">Contacto</p>
+              <h2>Mensagens</h2>
+            </div>
+            <button type="button" class="btn btn-outline" id="refreshMessages">Actualizar</button>
+          </div>
+          <div class="students-toolbar toolbar">
+            <input type="search" id="messageSearch" placeholder="Pesquisar nome, email, mensagem…" autocomplete="off">
+            <select id="messageStatusFilter">
+              <option value="new">Novas</option>
+              <option value="read">Lidas</option>
+              <option value="done">Concluídas</option>
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <p class="muted count-line" id="messagesCount"></p>
+          <div id="messagesList" class="enrollments-list">
+            <p class="muted">A carregar…</p>
+          </div>
+        </section>
+
+<!-- Courses -->
         <section id="panel-courses" class="panel" hidden>
           <div class="panel-head">
             <div class="panel-head-text">
@@ -319,6 +350,7 @@
               <li><strong>Editar / Eliminar</strong> — soft-delete esconde o curso ou vídeo dos alunos (não apaga os ficheiros de vídeo).</li>
               <li>O aluno vê os vídeos no dashboard; o sistema gera links assinados temporários.</li>
               <li><strong>Website</strong> — textos PT/EN, preços, produtos, imagens (Cloudinary) e contacto.</li>
+              <li><strong>Mensagens</strong> — pedidos do formulário de contacto do site (marcar como lida / concluída).</li>
               <li><strong>Avisos</strong> — envie notificações a um aluno ou a todos os activos.</li>
               <li><strong>Certificados</strong> — emitidos automaticamente quando o aluno conclui 100% dos vídeos.</li>
             </ol>

@@ -122,6 +122,7 @@
     students: 'Alunos',
     enrollments: 'Inscrições',
     orders: 'Encomendas',
+    messages: 'Mensagens',
     courses: 'Cursos',
     website: 'Website',
     notify: 'Avisos',
@@ -140,6 +141,7 @@
     if (titleEl) titleEl.textContent = PANEL_TITLES[panel] || panel;
     if (panel === 'enrollments') loadEnrollments();
     if (panel === 'orders') loadOrders();
+    if (panel === 'messages') loadMessages();
     if (panel === 'students') loadStudents();
     if (panel === 'courses') loadCourses();
     if (panel === 'notify') populateNotifyUsers();
@@ -158,6 +160,7 @@
     loadCourses();
     loadEnrollments();
     loadOrders();
+    loadMessages();
   }
 
   async function loadSummary() {
@@ -490,6 +493,133 @@
     } catch (err) {
       alert(err.message);
     }
+  }
+
+
+  // ==================== Contact messages ====================
+
+  const messagesList = document.getElementById('messagesList');
+  const messageSearch = document.getElementById('messageSearch');
+  const messageStatusFilter = document.getElementById('messageStatusFilter');
+  const messagesCount = document.getElementById('messagesCount');
+  let messagesCache = [];
+
+  async function loadMessages() {
+    if (!messagesList) return;
+    messagesList.innerHTML = '<p class="muted">A carregar…</p>';
+    try {
+      const status = messageStatusFilter ? messageStatusFilter.value : 'new';
+      const q = messageSearch ? messageSearch.value.trim() : '';
+      let path = '/admin/messages?limit=200';
+      if (status) path += '&status=' + encodeURIComponent(status);
+      if (q) path += '&q=' + encodeURIComponent(q);
+      const data = await api(path);
+      messagesCache = (data && data.messages) || [];
+      renderMessages();
+      loadSummary();
+    } catch (err) {
+      messagesList.innerHTML = '<p class="error">' + esc(err.message) + '</p>';
+    }
+  }
+
+  function renderMessages() {
+    if (!messagesList) return;
+    if (messagesCount) {
+      messagesCount.textContent = messagesCache.length
+        ? messagesCache.length + ' mensagem' + (messagesCache.length === 1 ? '' : 's')
+        : 'Nenhuma mensagem';
+    }
+    if (!messagesCache.length) {
+      messagesList.innerHTML = '<p class="muted empty-state">Sem mensagens neste filtro.</p>';
+      return;
+    }
+        messagesList.innerHTML = messagesCache
+      .map((m) => {
+        const statusChip =
+          m.status === 'done'
+            ? '<span class="chip chip-done">Concluída</span>'
+            : m.status === 'read'
+              ? '<span class="chip chip-pending">Lida</span>'
+              : '<span class="chip chip-pending">Nova</span>';
+        return (
+          '<article class="enrollment-card" data-id="' +
+          esc(m.id) +
+          '">' +
+          '<div class="enrollment-card-head">' +
+          '<div>' +
+          '<h3>' +
+          esc(m.name || '—') +
+          '</h3>' +
+          '<div class="enrollment-meta">' +
+          statusChip +
+          (m.subject ? ' <span>' + esc(m.subject) + '</span>' : '') +
+          '</div>' +
+          '</div>' +
+          '<div class="enrollment-actions">' +
+          (m.status === 'new'
+            ? '<button type="button" class="btn btn-sm btn-outline" data-msg-status="read">Marcar lida</button>'
+            : '') +
+          (m.status !== 'done'
+            ? '<button type="button" class="btn btn-sm" data-msg-status="done">Concluir</button>'
+            : '') +
+          (m.status === 'done'
+            ? '<button type="button" class="btn btn-sm btn-outline" data-msg-status="new">Reabrir</button>'
+            : '') +
+          '<button type="button" class="btn btn-sm btn-danger" data-msg-delete>Apagar</button>' +
+          '</div>' +
+          '</div>' +
+          '<dl class="enrollment-details">' +
+          (m.email ? '<div><dt>Email</dt><dd>' + esc(m.email) + '</dd></div>' : '') +
+          (m.phone ? '<div><dt>Telefone</dt><dd>' + esc(m.phone) + '</dd></div>' : '') +
+          '<div><dt>Mensagem</dt><dd>' + esc(m.message || '') + '</dd></div>' +
+          '<div><dt>Recebido</dt><dd>' + esc(m.created_at || '') + '</dd></div>' +
+          '</dl>' +
+          '</article>'
+        );
+      })
+      .join('');
+  }
+
+  if (document.getElementById('refreshMessages')) {
+    document.getElementById('refreshMessages').addEventListener('click', loadMessages);
+  }
+  if (messageStatusFilter) messageStatusFilter.addEventListener('change', loadMessages);
+  if (messageSearch) {
+    let msgTmr;
+    messageSearch.addEventListener('input', () => {
+      clearTimeout(msgTmr);
+      msgTmr = setTimeout(loadMessages, 280);
+    });
+  }
+  if (messagesList) {
+    messagesList.addEventListener('click', async (ev) => {
+      const card = ev.target.closest('[data-id]');
+      if (!card) return;
+      const id = card.getAttribute('data-id');
+      if (ev.target.closest('[data-msg-delete]')) {
+        if (!confirm('Apagar esta mensagem?')) return;
+        try {
+          await api('/admin/messages/delete', { method: 'POST', body: JSON.stringify({ id }) });
+          loadMessages();
+        } catch (err) {
+          alert(err.message || 'Erro ao apagar');
+        }
+        return;
+      }
+      const statusBtn = ev.target.closest('[data-msg-status]');
+      if (statusBtn) {
+        const status = statusBtn.getAttribute('data-msg-status');
+        try {
+          await api('/admin/messages/status', {
+            method: 'POST',
+            body: JSON.stringify({ id, status }),
+          });
+          loadMessages();
+        } catch (err) {
+          alert(err.message || 'Erro ao actualizar');
+        }
+      }
+    });
   }
 
   // ==================== Courses ====================

@@ -28,6 +28,7 @@ export default {
       if (path === '/api/site' && request.method === 'GET') return await handlePublicSite(request, env);
       if (path === '/api/enroll' && request.method === 'POST') return await handlePublicEnroll(request, env);
       if (path === '/api/orders' && request.method === 'POST') return await handlePublicOrder(request, env);
+      if (path === '/api/contact' && request.method === 'POST') return await handlePublicContact(request, env);
 
       // ---------- Auth ----------
       if (path === '/api/auth/register' && request.method === 'POST') return await handleRegister(request, env);
@@ -83,6 +84,9 @@ export default {
       if (path === '/api/admin/orders' && request.method === 'GET') return await handleListOrders(request, env);
       if (path === '/api/admin/orders/done' && request.method === 'POST') return await handleOrderDone(request, env);
       if (path === '/api/admin/orders/delete' && request.method === 'POST') return await handleOrderDelete(request, env);
+      if (path === '/api/admin/messages' && request.method === 'GET') return await handleListMessages(request, env);
+      if (path === '/api/admin/messages/status' && request.method === 'POST') return await handleMessageStatus(request, env);
+      if (path === '/api/admin/messages/delete' && request.method === 'POST') return await handleMessageDelete(request, env);
 
       return json({ error: 'Not found' }, 404);
     } catch (err) {
@@ -1031,12 +1035,14 @@ async function handleAdminSummary(request, env) {
     students_pending,
     enrollments_pending,
     orders_pending,
+    messages_new,
     courses,
   ] = await Promise.all([
     count(`SELECT COUNT(*) AS n FROM users`),
     count(`SELECT COUNT(*) AS n FROM users WHERE status = 'pending'`),
     count(`SELECT COUNT(*) AS n FROM enrollments WHERE status = 'pending'`),
     count(`SELECT COUNT(*) AS n FROM orders WHERE status = 'pending'`),
+    count(`SELECT COUNT(*) AS n FROM contact_messages WHERE status = 'new'`),
     count(`SELECT COUNT(*) AS n FROM courses WHERE active = 1`),
   ]);
   return json({
@@ -1046,6 +1052,7 @@ async function handleAdminSummary(request, env) {
       students_pending,
       enrollments_pending,
       orders_pending,
+      messages_new,
       courses,
     },
   });
@@ -2069,3 +2076,97 @@ async function handleOrderDelete(request, env) {
   await env.DB.prepare(`DELETE FROM orders WHERE id = ?`).bind(body.id).run();
   return json({ ok: true });
 }
+
+async function handlePublicContact(request, env) {
+  if (!env.DB) return json({ error: 'Database not configured' }, 500);
+  const body = await readBody(request);
+  const name = String(body.name || '').trim();
+  const email = String(body.email || '').trim().toLowerCase();
+  const phone = String(body.phone || '').trim();
+  const subject = String(body.subject || body.interest || '').trim();
+  const message = String(body.message || '').trim();
+
+  if (!name || name.length < 2) return json({ error: 'Nome é obrigatório.' }, 400);
+  if (!message || message.length < 3) return json({ error: 'Mensagem é obrigatória.' }, 400);
+  if (!phone && !email) return json({ error: 'Indique telefone ou email.' }, 400);
+
+  const id = uuid();
+  try {
+    await env.DB.prepare(
+      `INSERT INTO contact_messages (id, name, email, phone, subject, message, status)
+       VALUES (?, ?, ?, ?, ?, ?, 'new')`
+    )
+      .bind(id, name, email || null, phone || null, subject || null, message)
+      .run();
+  } catch (err) {
+    if (String(err.message || '').includes('no such table')) {
+      return json({ error: 'Tabela contact_messages em falta. Execute schema.sql no D1.' }, 500);
+    }
+    throw err;
+  }
+  return json({ ok: true, id });
+}
+
+async function handleListMessages(request, env) {
+  await requireAdmin(request, env);
+  const url = new URL(request.url);
+  const status = (url.searchParams.get('status') || '').trim();
+  const q = (url.searchParams.get('q') || '').trim().toLowerCase();
+  const limit = Math.min(200, Math.max(1, parseInt(url.searchParams.get('limit') || '200', 10) || 200));
+
+  let sql = `SELECT * FROM contact_messages`;
+  const where = [];
+  const binds = [];
+  if (status === 'new' || status === 'read' || status === 'done') {
+    where.push('status = ?');
+    binds.push(status);
+  }
+  if (q) {
+    where.push(
+      `(LOWER(IFNULL(name,'')) LIKE ? OR LOWER(IFNULL(email,'')) LIKE ? OR LOWER(IFNULL(phone,'')) LIKE ? OR LOWER(IFNULL(subject,'')) LIKE ? OR LOWER(IFNULL(message,'')) LIKE ?)`
+    );
+    const like = '%' + q + '%';
+    binds.push(like, like, like, like, like);
+  }
+  if (where.length) sql += ' WHERE ' + where.join(' AND ');
+  sql += ` ORDER BY created_at DESC LIMIT ?`;
+  binds.push(limit);
+
+  try {
+    const { results } = await env.DB.prepare(sql).bind(...binds).all();
+    return json({
+      messages: results || [],
+      meta: { q: q || null, status: status || null, count: (results || []).length },
+    });
+  } catch (err) {
+    if (String(err.message || '').includes('no such table')) {
+      return json({ messages: [], error: 'Tabela contact_messages em falta. Execute schema.sql.' });
+    }
+    throw err;
+  }
+}
+
+async function handleMessageStatus(request, env) {
+  await requireAdmin(request, env);
+  const body = await readBody(request);
+  if (!body.id) return json({ error: 'id obrigatório' }, 400);
+  const status = String(body.status || '').trim();
+  if (!['new', 'read', 'done'].includes(status)) {
+    return json({ error: 'status inválido' }, 400);
+  }
+  await env.DB.prepare(
+    `UPDATE contact_messages SET status = ?, updated_at = datetime('now') WHERE id = ?`
+  )
+    .bind(status, body.id)
+    .run();
+  return json({ ok: true });
+}
+
+async function handleMessageDelete(request, env) {
+  await requireAdmin(request, env);
+  const body = await readBody(request);
+  if (!body.id) return json({ error: 'id obrigatório' }, 400);
+  await env.DB.prepare(`DELETE FROM contact_messages WHERE id = ?`).bind(body.id).run();
+  return json({ ok: true });
+}
+

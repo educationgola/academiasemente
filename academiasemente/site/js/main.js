@@ -154,23 +154,73 @@
     updateEnrollPrice();
   })();
 
-  // ---------- Contact form → WhatsApp ----------
+  // ---------- Contact form → Admin API ----------
   if (contactForm) {
     contactForm.addEventListener('submit', function (e) {
       e.preventDefault();
       var nameEl = document.getElementById('c-name');
+      var emailEl = document.getElementById('c-email');
       var phoneEl = document.getElementById('c-phone');
       var interestEl = document.getElementById('c-interest');
       var messageEl = document.getElementById('c-message');
+      var errEl = document.getElementById('contactError');
+      var okEl = document.getElementById('contactSuccess');
+      var submitBtn = document.getElementById('contactSubmitBtn');
+      if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+      if (okEl) okEl.hidden = true;
+
       var name = nameEl ? nameEl.value.trim() : '';
+      var email = emailEl ? emailEl.value.trim() : '';
       var phone = phoneEl ? phoneEl.value.trim() : '';
       var interest = interestEl ? interestEl.value : '';
       var message = messageEl ? messageEl.value.trim() : '';
-      var text = 'Olá! Sou *' + name + '*.\n';
-      text += 'Telefone: ' + phone + '\n';
-      text += 'Assunto: ' + interest + '\n';
-      if (message) text += '\nMensagem: ' + message;
-      openWhatsApp(text);
+
+      var apiBase = (window.ACADEMIA_CONFIG && window.ACADEMIA_CONFIG.WORKER_URL) || '';
+      apiBase = apiBase.replace(/\/$/, '');
+      if (!apiBase) {
+        if (errEl) {
+          errEl.textContent = 'Serviço indisponível. Tente mais tarde.';
+          errEl.hidden = false;
+        }
+        return;
+      }
+
+      if (submitBtn) submitBtn.disabled = true;
+      fetch(apiBase + '/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name,
+          email: email,
+          phone: phone,
+          subject: interest,
+          message: message,
+        }),
+      })
+        .then(function (res) {
+          return res.text().then(function (text) {
+            var data = {};
+            try { data = text ? JSON.parse(text) : {}; } catch (err) { data = { error: text || 'Erro do servidor' }; }
+            if (!res.ok) throw new Error(data.error || 'Erro ' + res.status);
+            return data;
+          });
+        })
+        .then(function () {
+          contactForm.reset();
+          if (okEl) {
+            okEl.hidden = false;
+            okEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        })
+        .catch(function (err) {
+          if (errEl) {
+            errEl.textContent = err.message || 'Não foi possível enviar a mensagem. Tente novamente.';
+            errEl.hidden = false;
+          }
+        })
+        .finally(function () {
+          if (submitBtn) submitBtn.disabled = false;
+        });
     });
   }
 
@@ -805,7 +855,7 @@
       heroTitle: 'Aprenda inglês<br>para a vida real',
       heroSubtitle: 'Metodologia exclusiva que transforma o português que você já fala em inglês fluente, em até 12 meses.',
       heroCta: 'Ver cursos',
-      heroCta2: 'Falar no WhatsApp',
+      heroCta2: 'Inscrever-me',
       scroll: 'Scroll',
       aboutEyebrow: 'A Academia',
       aboutTitle: 'Toda grande conquista<br>começa por uma semente',
@@ -882,9 +932,14 @@
       enrollDesc: 'Preencha o formulário completo. Receberá a confirmação e, em seguida, a referência de pagamento e o acompanhamento da equipa.',
       contactEyebrow: 'Contacto',
       contactTitle: 'Fale connosco',
-      contactDesc: 'Envie-nos uma mensagem. Respondemos rapidamente via WhatsApp. Para se inscrever num curso, use a página de inscrição.',
+      contactDesc: 'Tem dúvidas sobre cursos, horários ou materiais? Envie a sua mensagem — a equipa responde em até 1 dia útil. Para se inscrever num curso, use a página de inscrição.',
       locationLabel: 'Localização',
-      phoneLabel: 'WhatsApp',
+      phoneLabel: 'Telefone / WhatsApp',
+      hoursLabel: 'Horário de atendimento',
+      hoursText: 'Seg–Sex · 08:00–18:00<br>Sáb · 09:00–13:00',
+      formEmail: 'Email',
+      formEmailPh: 'seu@email.com',
+      contactSuccess: 'Mensagem enviada. A equipa responderá em breve.',
       emailLabel: 'Email',
       socialLabel: 'Redes sociais',
       formName: 'Nome completo',
@@ -900,7 +955,7 @@
       formInterest: 'Assunto',
       formMessage: 'Mensagem',
       formMessagePh: 'Como podemos ajudar?',
-      formSubmit: 'Enviar via WhatsApp',
+      formSubmit: 'Enviar mensagem',
       formCourse: 'Curso em que se inscreve',
       formAddress: 'Morada / Localização',
       formAddressPh: 'Rua, bairro, número',
@@ -941,6 +996,7 @@
       successStep1: 'Confirmamos os seus dados e a modalidade do curso',
       successStep2: 'Enviamos a referência Multicaixa / instruções de pagamento',
       successStep3: 'Após o pagamento, confirmamos a vaga e o teste de nível',
+      successAccount: 'Criar conta',
       successWhatsApp: 'Falar no WhatsApp',
       successHome: 'Voltar ao início',
       successHint: 'Guarde o seu contacto activo — a equipa Academia Semente responderá em breve.',
@@ -1010,7 +1066,7 @@
       heroTitle: 'Learn English<br>for real life',
       heroSubtitle: 'Exclusive methodology that turns the Portuguese you already speak into fluent English, in up to 12 months.',
       heroCta: 'View courses',
-      heroCta2: 'Chat on WhatsApp',
+      heroCta2: 'Enrol now',
       scroll: 'Scroll',
       aboutEyebrow: 'The Academy',
       aboutTitle: 'Every great achievement<br>begins with a seed',
@@ -1087,9 +1143,9 @@
       enrollDesc: 'Fill in the full form. You will receive confirmation, then the payment reference and follow-up from the team.',
       contactEyebrow: 'Contact',
       contactTitle: 'Get in touch',
-      contactDesc: 'Send us a message. We reply quickly via WhatsApp. To enrol in a course, use the enrolment page.',
+      contactDesc: 'Questions about courses, schedules or materials? Send a message — the team replies within 1 business day. To enrol, use the enrolment page.',
       locationLabel: 'Location',
-      phoneLabel: 'WhatsApp',
+      phoneLabel: 'Phone / WhatsApp',
       emailLabel: 'Email',
       socialLabel: 'Social media',
       formName: 'Full name',
@@ -1101,11 +1157,16 @@
       formEmail: 'Email',
       formEmailPh: 'name@email.com',
       formPhone: 'Phone / WhatsApp',
+      formEmail: 'Email',
+      formEmailPh: 'you@email.com',
+      hoursLabel: 'Office hours',
+      hoursText: 'Mon–Fri · 08:00–18:00<br>Sat · 09:00–13:00',
+      contactSuccess: 'Message sent. The team will reply soon.',
       formPhonePh: '+244 ...',
       formInterest: 'Subject',
       formMessage: 'Message',
       formMessagePh: 'How can we help?',
-      formSubmit: 'Send via WhatsApp',
+      formSubmit: 'Send message',
       formCourse: 'Course you are enrolling in',
       formAddress: 'Address / location',
       formAddressPh: 'Street, neighbourhood, number',
@@ -1146,6 +1207,7 @@
       successStep1: 'We confirm your details and course format',
       successStep2: 'We send the Multicaixa reference / payment instructions',
       successStep3: 'After payment, we confirm your place and the level test',
+      successAccount: 'Create account',
       successWhatsApp: 'Chat on WhatsApp',
       successHome: 'Back to home',
       successHint: 'Keep your contact available — the Academia Semente team will reply soon.',
