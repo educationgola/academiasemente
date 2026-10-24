@@ -1246,7 +1246,7 @@ async function handleGrantCourse(request, env) {
     const title = (course && course.title_pt) || 'um curso';
     await createNotification(env, user_id, {
       title: 'Novo curso atribuído',
-      body: `Tem acesso a: ${title}. Abra a área de aluno para começar.`,
+      body: `Tem acesso a: ${title}. Abra a área de Cursos para começar.`,
       type: 'course',
     });
   } catch (_) {}
