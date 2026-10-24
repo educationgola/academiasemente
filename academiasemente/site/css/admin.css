@@ -370,7 +370,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.5rem;
   height: var(--topbar-h);
   padding: 0 1.15rem;
   padding-top: var(--safe-top);
@@ -382,6 +382,12 @@ body {
   position: sticky;
   top: 0;
   z-index: 30;
+  min-width: 0;
+}
+
+.topbar-left {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .page-title {
@@ -390,12 +396,16 @@ body {
   font-weight: 700;
   letter-spacing: -0.025em;
   color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .topbar-right {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.45rem;
+  flex-shrink: 0;
 }
 
 .topbar-badge {
@@ -795,17 +805,22 @@ tr:hover td { background: rgba(232, 245, 236, 0.45); }
   font-size: 1rem;
   font-weight: 600;
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.4rem 0.6rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  min-width: 0;
+  word-break: break-word;
 }
 
 .course-id {
-  font-size: 0.72rem;
+  display: block;
+  font-size: 0.68rem;
   font-weight: 400;
-  color: #888;
+  color: #9ca3af;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   word-break: break-all;
+  line-height: 1.35;
+  max-width: 100%;
 }
 
 .course-block .muted { margin: 0 0 0.65rem; }
@@ -816,6 +831,11 @@ tr:hover td { background: rgba(232, 245, 236, 0.45); }
   align-items: flex-start;
   gap: 0.75rem;
   flex-wrap: wrap;
+}
+
+.course-block-head > div:first-child {
+  min-width: 0;
+  flex: 1 1 12rem;
 }
 
 .course-actions {
@@ -1275,10 +1295,11 @@ tr:hover td { background: rgba(232, 245, 236, 0.45); }
   .app-sidebar {
     display: flex !important;
     flex-direction: column;
-    width: 64px;
-    min-width: 64px;
+    width: 56px;
+    min-width: 56px;
     padding-top: var(--safe-top, 0px);
     overflow-y: auto;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     z-index: 50;
   }
@@ -1297,8 +1318,8 @@ tr:hover td { background: rgba(232, 245, 236, 0.45); }
     border: 0;
   }
   .sidebar-nav {
-    padding: 0.45rem 0.35rem;
-    gap: 0.2rem;
+    padding: 0.4rem 0.3rem;
+    gap: 0.15rem;
     overflow-y: auto;
   }
   .sidebar-nav .nav-btn {
@@ -1306,8 +1327,8 @@ tr:hover td { background: rgba(232, 245, 236, 0.45); }
     justify-content: center;
     align-items: center;
     flex-direction: row;
-    padding: 0.75rem 0.35rem;
-    min-height: 48px;
+    padding: 0.7rem 0.25rem;
+    min-height: 46px;
     border-radius: 12px;
     gap: 0;
   }
@@ -1318,8 +1339,8 @@ tr:hover td { background: rgba(232, 245, 236, 0.45); }
   }
   .sidebar-nav .nav-btn span.nav-count {
     position: absolute;
-    top: 4px;
-    right: 2px;
+    top: 3px;
+    right: 1px;
     margin-left: 0;
     font-size: 0.58rem;
     min-width: 1.05rem;
@@ -1328,8 +1349,8 @@ tr:hover td { background: rgba(232, 245, 236, 0.45); }
   }
   .btn-logout {
     justify-content: center;
-    padding: 0.75rem 0.35rem;
-    min-height: 48px;
+    padding: 0.7rem 0.25rem;
+    min-height: 46px;
     font-size: 0; /* hide "Sair" text, keep icon */
   }
   .btn-logout svg {
@@ -1337,28 +1358,129 @@ tr:hover td { background: rgba(232, 245, 236, 0.45); }
   }
   .sidebar-brand {
     justify-content: center;
-    padding: 0.85rem 0.35rem 0.75rem;
+    padding: 0.75rem 0.25rem 0.65rem;
   }
   .sidebar-brand .brand-mark {
-    width: 40px;
-    height: 40px;
-    font-size: 0.75rem;
+    width: 36px;
+    height: 36px;
+    font-size: 0.72rem;
   }
   .sidebar-footer {
-    padding: 0.45rem 0.3rem calc(0.65rem + var(--safe-bottom, 0px));
+    padding: 0.4rem 0.25rem calc(0.55rem + var(--safe-bottom, 0px));
   }
   .admin-main {
-    padding: 1rem 0.85rem 1.5rem;
+    padding: 0.85rem 0.75rem calc(1.5rem + var(--safe-bottom, 0px));
   }
   .app-body {
     min-width: 0;
     width: 100%;
+    overflow-x: hidden;
+  }
+  .app-topbar {
+    padding-left: 0.75rem;
+    padding-right: 0.65rem;
+    gap: 0.35rem;
+  }
+  .page-title {
+    font-size: 1rem;
+  }
+  .topbar-badge {
+    font-size: 0.65rem;
+    padding: 0.25rem 0.45rem;
+  }
+  .topbar-logout {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.15rem;
+  }
+  .online-pill {
+    font-size: 0.7rem;
+    padding: 0.22rem 0.5rem;
+    gap: 0.25rem;
+  }
+  /* Course cards: stack actions under title, hide noisy IDs */
+  .course-id {
+    display: none;
+  }
+  .course-block {
+    padding: 0.95rem 0.9rem;
+    border-radius: 14px;
+  }
+  .course-block-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
+  .course-actions {
+    width: 100%;
+  }
+  .course-actions .btn {
+    flex: 1 1 auto;
+    text-align: center;
+    justify-content: center;
+  }
+  .video-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .video-row-actions {
+    width: 100%;
+  }
+  .video-row-actions .btn {
+    flex: 1 1 auto;
+  }
+  .video-row-info code,
+  .video-row code {
+    max-width: 100%;
+    text-align: left;
+  }
+  .form-section {
+    padding: 1rem 0.9rem;
+    border-radius: 14px;
+    margin-top: 1rem;
+  }
+  .form-grid {
+    max-width: none;
+  }
+  .form-grid input,
+  .form-grid textarea,
+  .form-grid select {
+    font-size: 16px; /* prevent iOS zoom */
+  }
+  .form-actions {
+    flex-direction: column;
+  }
+  .form-actions .btn {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+  .panel-head h2 {
+    font-size: 1.15rem;
   }
   .bottom-nav {
     display: none !important;
     pointer-events: none !important;
     visibility: hidden !important;
     height: 0 !important;
+  }
+}
+
+/* Extra-narrow phones */
+@media (max-width: 380px) {
+  .app-sidebar {
+    width: 52px;
+    min-width: 52px;
+  }
+  .online-pill #studentsOnlineText {
+    /* keep pill, slightly tighter */
+  }
+  .topbar-badge {
+    display: none; /* free space; sidebar already shows staff context */
+  }
+  .admin-main {
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
   }
 }
 
