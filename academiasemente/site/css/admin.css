@@ -438,6 +438,14 @@ body {
   max-width: 1100px;
   margin: 0 auto;
   padding: 1.15rem 1rem 1.75rem;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.panel {
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* ========== BOTTOM NAV (hidden — sidebar always) ========== */
@@ -698,6 +706,8 @@ tr:hover td { background: rgba(232, 245, 236, 0.45); }
   display: grid;
   gap: 0.85rem;
   max-width: 520px;
+  width: 100%;
+  min-width: 0;
 }
 
 .form-grid label {
@@ -707,11 +717,18 @@ tr:hover td { background: rgba(232, 245, 236, 0.45); }
   font-size: 0.85rem;
   font-weight: 500;
   color: #374151;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .form-grid input,
 .form-grid textarea,
 .form-grid select {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0; /* stop long text from expanding the card */
+  box-sizing: border-box;
   padding: 0.65rem 0.8rem;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
@@ -720,6 +737,11 @@ tr:hover td { background: rgba(232, 245, 236, 0.45); }
   font-weight: 400;
   background: #fff;
   transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-grid input[type="file"] {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .form-grid input:focus,
@@ -737,6 +759,10 @@ tr:hover td { background: rgba(232, 245, 236, 0.45); }
   padding: 1.3rem 1.2rem;
   margin-top: 1.25rem;
   box-shadow: var(--shadow);
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .form-section h3 {
@@ -790,6 +816,8 @@ tr:hover td { background: rgba(232, 245, 236, 0.45); }
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .course-block {
@@ -798,6 +826,10 @@ tr:hover td { background: rgba(232, 245, 236, 0.45); }
   border-radius: var(--radius);
   padding: 1.1rem 1.15rem;
   box-shadow: var(--shadow);
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .course-block h4 {
@@ -884,20 +916,24 @@ tr:hover td { background: rgba(232, 245, 236, 0.45); }
 }
 
 .video-row-info code {
+  display: block;
   max-width: 100%;
   text-align: left;
   font-size: 0.72rem;
   color: #666;
   word-break: break-all;
+  overflow-wrap: anywhere;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .video-row code {
+  display: block;
   font-size: 0.72rem;
   color: #666;
   word-break: break-all;
-  text-align: right;
-  max-width: 55%;
+  overflow-wrap: anywhere;
+  text-align: left;
+  max-width: 100%;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
@@ -1441,11 +1477,17 @@ tr:hover td { background: rgba(232, 245, 236, 0.45); }
   }
   .form-grid {
     max-width: none;
+    width: 100%;
+    min-width: 0;
   }
   .form-grid input,
   .form-grid textarea,
   .form-grid select {
     font-size: 16px; /* prevent iOS zoom */
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
   .form-actions {
     flex-direction: column;
